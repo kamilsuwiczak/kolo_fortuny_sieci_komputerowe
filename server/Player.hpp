@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <iostream>
+#include <sys/socket.h>
 
 class Player{
 private:
@@ -28,6 +29,11 @@ public:
 
     int addPoint(){
         points++;
+    }
+
+    int sendMessage(std::string& message){
+        message += '\n';
+        return send(getSockDes(), &message, message.length(), 0);
     }
     
 };
