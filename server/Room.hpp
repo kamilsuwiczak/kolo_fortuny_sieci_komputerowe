@@ -5,61 +5,69 @@
 #include <random>
 #include <iostream>
 #include "Player.hpp"
+#include <condition_variable>
+#include <thread>
+#pragma once
 
+enum GameState {
+    WAITING,
+    IN_PROGRESS,
+    FINISHED
+};
 
 class Room{
 private:
-    int roomNumber;
-    std::vector <Player> playersList; 
-    std::string password;
-    std::string hashedPassword;
-    std::vector <int> unreavealedLetterIndices;
-    std::string gameState;
-    std::string roundState;
-    int currentRound;
-    int maxRound;
+    // Zarządzanie pokojem
+    int m_room_number;
+    std::vector<Player*> m_players_list; 
+    Player* m_host;                      
+    std::mutex m_mutex;                 
     
-public:
-    Room(int roomNumber);
-
-    int getRoomNumber(){
-        return roomNumber;
-    }
-    std::string getPassword(){
-        return password;
-    }
-    std::string getHashedPassword(){
-        return hashedPassword;
-    }
-
-    void generatePassword(){
+    // Logika gry
+    std::thread m_game_thread;           
+    std::string m_password;                     
+    std::string m_hashed_password;             
+    std::vector<int> m_unrevealed_indices; 
+    bool m_round_over;  
+    std::condition_variable m_guess_cv; // Do powiadamiania o zgadnięciu
     
-    }
-    void generateHashedPassword(){
+    // Stan gry i rund
+    GameState m_game_state; 
+    int m_current_round;
+    int m_max_round;
+    
+    
+    void broadcast(const std::string& message); // Wysyłanie wiadomości do wszystkich
+    void gameLoop(); 
+    void sendStateToAll(); // Wysyła m_hashed_password
+    bool revealRandomLetter(); 
+    void finishGame();
+    public:
+    
+    
+    Room(int roomNumber, Player* host); // Konstruktor przyjmuje hosta
+    
+    ~Room();
+    
+    int getRoomNumber() const { return m_room_number; }
+    const std::string& getPassword() const { return m_password; }
+    const std::string& getHashedPassword() const { return m_hashed_password; }
+    GameState getGameState() const { return m_game_state; }
+    std::vector<int> getUnrevealedLetterIndices() const { return m_unrevealed_indices; }
+    std::thread& getGameThread() { return m_game_thread; }
+    
+    void generatePassword();
+    void generateHashedPassword();
+    void generateUnrevealedLetterIndices();
 
-    }
-    void generateUnreavealedLetterIndices(){
+    // metody rundy i gry
+    void startNewRound();
+    void startGame(int maxRounds); 
 
-    }
-    void revealLetter(){
-        
-    }
-    void startNewRound(){
-
-    }
-    void startGame(){
-
-    }
-    void broadcast(){
-
-    }
-
-    bool addPlayer(Player *player){
-
-    }
-    bool removePlayer(int sockDes){
-
-    }
-
-
+    //  zarządzanie graczami
+    bool validateNick(const std::string& nick);
+    bool addPlayer(Player* player); 
+    bool removePlayer(int sockDes);
+    void processGuess(Player* player, const std::string& guess); 
 };
+

@@ -1,3 +1,4 @@
+#pragma once
 #include <stdio.h>
 #include <unistd.h>
 #include <iostream>
@@ -27,13 +28,13 @@ public:
         return points;
     }
 
-    int addPoint(){
+    void addPoint(){
         points++;
     }
 
-    int sendMessage(std::string& message){
-        message += '\n';
-        return send(getSockDes(), &message, message.length(), 0);
+    int sendMessage(const std::string& message){
+        std::string final_message = message + '\n';
+        return send(getSockDes(), final_message.c_str(), final_message.length(), 0);
     }
     
 };
