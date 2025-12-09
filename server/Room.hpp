@@ -40,7 +40,6 @@ private:
     void broadcast(const std::string& message); // Wysyłanie wiadomości do wszystkich
     void gameLoop(); 
     void sendStateToAll(); // Wysyła m_hashed_password
-    bool revealRandomLetter(); 
     void finishGame();
     public:
     
@@ -48,19 +47,22 @@ private:
     Room(int roomNumber, Player* host); // Konstruktor przyjmuje hosta
     
     ~Room();
-    
+    // Gettery
     int getRoomNumber() const { return m_room_number; }
     const std::string& getPassword() const { return m_password; }
     const std::string& getHashedPassword() const { return m_hashed_password; }
     GameState getGameState() const { return m_game_state; }
     std::vector<int> getUnrevealedLetterIndices() const { return m_unrevealed_indices; }
     std::thread& getGameThread() { return m_game_thread; }
+    GameState& getGameStateRef() { return m_game_state; }
+    bool& getRoundOverRef() { return m_round_over; }
+    int getPlayersCount() const { return m_players_list.size(); }
     
+    // metody rundy i gry
     void generatePassword();
     void generateHashedPassword();
     void generateUnrevealedLetterIndices();
-
-    // metody rundy i gry
+    bool revealRandomLetter();
     void startNewRound();
     void startGame(int maxRounds); 
 

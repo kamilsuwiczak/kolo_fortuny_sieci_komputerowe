@@ -7,7 +7,10 @@
 #include "Room.hpp"
 
 Room::Room(int roomNumber, Player* host):
-m_room_number(roomNumber),m_host(host),m_current_round(0), m_max_round(3){}
+m_room_number(roomNumber),m_host(host),m_current_round(0), m_max_round(3){
+    m_players_list.push_back(host);
+    m_game_state = WAITING;
+}
 
 Room::~Room() {}
 
@@ -28,7 +31,7 @@ void Room::generateHashedPassword(){
 }
 
 void Room::generateUnrevealedLetterIndices(){
-    for (int i =0;i<getPassword().length();i++){
+    for (int i =0;i<m_password.length();i++){
         m_unrevealed_indices.push_back(i);
     }
 }
@@ -99,42 +102,41 @@ void Room::gameLoop() {
     while (true) {
         {
             std::lock_guard<std::mutex> lock(m_mutex);
-            if (m_current_round >= m_max_round) {
+            if (m_current_round >= m_max_round || m_game_state != IN_PROGRESS) {
                 break; 
             }
         }
-        startNewRound();
 
-        std::unique_lock<std::mutex> lock(m_mutex);
-        while (m_game_state == IN_PROGRESS ) {
+        startNewRound(); 
+        std::unique_lock<std::mutex> lock(m_mutex); 
+        while (m_game_state == IN_PROGRESS) { 
             if (m_unrevealed_indices.size() <= m_password.length() * 0.5 || m_round_over) {
-                     break; 
+                break; 
             }
-
-           bool timed_out = m_guess_cv.wait_for(lock, std::chrono::seconds(10)) == std::cv_status::timeout;
+            bool timed_out = m_guess_cv.wait_for(lock, std::chrono::seconds(10)) == std::cv_status::timeout;
             
             if (timed_out && m_game_state == IN_PROGRESS) {
                 if (revealRandomLetter()) {
-                sendStateToAll();
+                    std::cout << "Revealed a letter: " << m_hashed_password << std::endl;
+                    sendStateToAll();
                 }
-            }
-            
+            } 
         }
         if (m_game_state == IN_PROGRESS) {
             
-            bool was_guessed;
-            {
-                 std::lock_guard<std::mutex> lock(m_mutex);
-                 was_guessed = m_round_over;
-            }
+            bool was_guessed = m_round_over; 
             
-            //Ten fragment do zmiany
             if (!was_guessed) {
                 broadcast("TIMEOUT: Ostatnia szansa. Oczekiwanie 10s...");
+                lock.unlock();
                 std::this_thread::sleep_for(std::chrono::seconds(10)); 
+                lock.lock(); 
             } else {
+                std::cout << "Password guessed by a player." << std::endl;
                 broadcast("INFO: Przejście do następnej rundy za 3s.");
+                lock.unlock(); 
                 std::this_thread::sleep_for(std::chrono::seconds(3)); 
+                lock.lock();
             }
         }
     }
@@ -147,7 +149,43 @@ void Room::gameLoop() {
 void Room::finishGame() {
     std::lock_guard<std::mutex> lock(m_mutex);
     m_game_state = FINISHED;
-    broadcast("GAME OVER " + m_password);
+    broadcast("GAME OVER ");
+}
+
+bool Room::validateNick(const std::string& nick) {
+    for (const auto& player : m_players_list) {
+        if (player->getNick() == nick) {
+            return false; 
+        }
+    }
+    return true;
+}
+
+bool Room::addPlayer(Player* player) {
+
+    std::lock_guard<std::mutex> lock(m_mutex);
+    if(m_game_state != WAITING) {
+        player->sendMessage("ERROR: Gra już się rozpoczęła. Nie można dołączyć do pokoju.");
+        return false; 
+    }
+    if (!validateNick(player->getNick())) {
+        player->sendMessage("ERROR: Nick jest już zajęty w tym pokoju.");
+        return false; 
+    }
+    
+    if (!player) return false;
+    m_players_list.push_back(player);
+    return true;
+}
+
+bool Room::removePlayer(int sockDes) {
+    auto it = std::find_if(m_players_list.begin(), m_players_list.end(),
+                          [sockDes](Player* p) { return p->getSockDes() == sockDes; });
+    if (it != m_players_list.end()) {
+        m_players_list.erase(it);
+        return true;
+    }
+    return false;
 }
 
 

@@ -1,1 +1,6 @@
 .env
+.exe
+.o
+build/
+.vscode/
+.idea/
