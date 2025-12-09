@@ -129,7 +129,7 @@ void Room::gameLoop() {
             if (!was_guessed) {
                 broadcast("TIMEOUT: Ostatnia szansa. Oczekiwanie 10s...");
                 lock.unlock();
-                std::this_thread::sleep_for(std::chrono::seconds(10)); 
+                std::this_thread::sleep_for(std::chrono::seconds(10)); //To do zmiany
                 lock.lock(); 
             } else {
                 std::cout << "Password guessed by a player." << std::endl;
@@ -164,6 +164,12 @@ bool Room::validateNick(const std::string& nick) {
 bool Room::addPlayer(Player* player) {
 
     std::lock_guard<std::mutex> lock(m_mutex);
+    
+    if (m_players_list.size() >= MAX_PLAYERS) {
+        player->sendMessage("ERROR: Pokój jest pełny.");
+        return false; 
+    }
+
     if(m_game_state != WAITING) {
         player->sendMessage("ERROR: Gra już się rozpoczęła. Nie można dołączyć do pokoju.");
         return false; 
@@ -172,20 +178,38 @@ bool Room::addPlayer(Player* player) {
         player->sendMessage("ERROR: Nick jest już zajęty w tym pokoju.");
         return false; 
     }
-    
+
     if (!player) return false;
     m_players_list.push_back(player);
     return true;
 }
 
-bool Room::removePlayer(int sockDes) {
-    auto it = std::find_if(m_players_list.begin(), m_players_list.end(),
-                          [sockDes](Player* p) { return p->getSockDes() == sockDes; });
-    if (it != m_players_list.end()) {
-        m_players_list.erase(it);
-        return true;
+Player* Room::removePlayer(int sockDes) {
+    std::lock_guard<std::mutex> lock(m_mutex);
+    Player* removed_player = nullptr;
+    auto it = std::remove_if(m_players_list.begin(), m_players_list.end(), 
+        [&](Player* p){
+            if (p->getSockDes() == sockDes) {
+                removed_player = p; 
+                return true; 
+            }
+            return false;
+        });
+        
+    if (removed_player) {
+        m_players_list.erase(it, m_players_list.end());
+        broadcast("PLAYER_LEFT " + removed_player->getNick());
+        if (removed_player == m_host) {
+            if (!m_players_list.empty()) {
+                m_host = m_players_list.front(); 
+                broadcast("HOST_CHANGE Nowym hostem jest: " + m_host->getNick());
+            } else {
+                m_host = nullptr; 
+            }
+        }
     }
-    return false;
+    
+    return removed_player; 
 }
 
 

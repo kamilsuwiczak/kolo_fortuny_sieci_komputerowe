@@ -21,7 +21,8 @@ private:
     int m_room_number;
     std::vector<Player*> m_players_list; 
     Player* m_host;                      
-    std::mutex m_mutex;                 
+    std::mutex m_mutex;         
+    static const int MAX_PLAYERS = 6;      
     
     // Logika gry
     std::thread m_game_thread;           
@@ -69,7 +70,7 @@ private:
     //  zarządzanie graczami
     bool validateNick(const std::string& nick);
     bool addPlayer(Player* player); 
-    bool removePlayer(int sockDes);
+    Player* removePlayer(int sockDes);
     void processGuess(Player* player, const std::string& guess); 
 };
 
