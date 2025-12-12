@@ -94,7 +94,6 @@ void Room::broadcast(const std::string& message) {
 }
 
 void Room::sendStateToAll() {
-
     broadcast("HASHPASS " + m_hashed_password);
 }
 
