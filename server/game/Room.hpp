@@ -22,7 +22,8 @@ private:
     std::vector<Player*> m_players_list; 
     Player* m_host;                      
     std::mutex m_mutex;         
-    static const int MAX_PLAYERS = 6;      
+    static const int MAX_PLAYERS = 6;
+    const std::vector<std::string>& m_password_source;   
     
     // Logika gry
     std::thread m_game_thread;           
@@ -45,7 +46,7 @@ private:
     public:
     
     
-    Room(int roomNumber, Player* host); // Konstruktor przyjmuje hosta
+    Room(int roomNumber, Player* host, const std::vector<std::string>& passwordSource); 
     
     ~Room();
     // Gettery
@@ -60,7 +61,7 @@ private:
     int getPlayersCount() const { return m_players_list.size(); }
     
     // metody rundy i gry
-    void generatePassword();
+    void generatePassword(const std::vector <std::string>& WORDS);
     void generateHashedPassword();
     void generateUnrevealedLetterIndices();
     bool revealRandomLetter();

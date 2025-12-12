@@ -6,16 +6,15 @@
 #include <iostream>
 #include "Room.hpp"
 
-Room::Room(int roomNumber, Player* host):
-m_room_number(roomNumber),m_host(host),m_current_round(0), m_max_round(3){
+Room::Room(int roomNumber, Player* host, const std::vector<std::string>& passwordSource):
+m_room_number(roomNumber),m_host(host),m_password_source(passwordSource),m_current_round(0), m_max_round(3){
     m_players_list.push_back(host);
     m_game_state = WAITING;
 }
 
 Room::~Room() {}
 
-void Room::generatePassword(){
-    static std::vector <std::string> WORDS = {"cat", "duck", "horse"};
+void Room::generatePassword(const std::vector <std::string>& WORDS){
     std::random_device rd;               
     std::mt19937 gen(rd());
     std::uniform_int_distribution<> dist(0, WORDS.size() - 1 );
@@ -57,7 +56,7 @@ void Room::startNewRound(){
     m_current_round++;
     m_round_over = false;
     m_unrevealed_indices.clear();
-    generatePassword();
+    generatePassword(m_password_source);
     generateHashedPassword();
     generateUnrevealedLetterIndices();
     broadcast("NEW ROUND " + std::to_string(m_current_round));

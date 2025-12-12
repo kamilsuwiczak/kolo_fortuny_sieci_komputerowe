@@ -1,63 +1,115 @@
+#include "Server.hpp"
 #include <iostream>
+#include <cstdlib>
+#include <unistd.h>
 #include <sys/socket.h>
-#include <sys/types.h>
-#include <sys/un.h>
 #include <netinet/in.h>
-#include <map>
+#include <cstring>
+#include <algorithm>
+#include <sstream>
 #include "../game/Player.hpp"
 #include "../game/Room.hpp"
-#include <random>
-
-#define MAX_CONNECTIONS 10
-
-std::map<int, Player*> fd_to_player;
-std::map<Player*, Room*> player_to_room;
 
 
-int setup_socket(){
-    int server_fd = socket(AF_INET6, SOCK_STREAM, 0);
-    if (server_fd == -1) {
-        std::cerr << "Failed to create socket" << std::endl;
-        exit(EXIT_FAILURE);
+Server::Server(int port) : m_listen_fd(-1) {
+    std::cout << "Inicjalizacja serwera..." << std::endl;
+    setup_listening_socket(port);
+}
+
+Server::~Server() {
+    std::cout << "Zamykanie serwera..." << std::endl;
+    
+    if (m_listen_fd != -1) {
+        close(m_listen_fd);
+    }
+    
+    for (auto const& [fd, player] : m_fd_to_player) {
+        close(fd);
+        delete player;
+    }
+    m_fd_to_player.clear();
+    
+    for (auto const& [id, room] : m_active_rooms) {
+        delete room; 
+    }
+    m_active_rooms.clear();
+
+    m_player_to_room.clear(); 
+    std::cout << "Zasoby serwera zwolnione." << std::endl;
+}
+
+void Server::setup_listening_socket(int port) {
+    m_listen_fd = socket(AF_INET, SOCK_STREAM, 0);
+    if (m_listen_fd == -1) {
+        throw std::runtime_error("Blad: Nie udalo sie utworzyc gniazda.");
     }
 
     int opt = 1;
-    if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt))) {
-    std::cerr << "setsockopt(SO_REUSEADDR) failed" << std::endl;
-    }   
+    if (setsockopt(m_listen_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt))) {
+        std::cerr << "Ostrzeżenie: setsockopt(SO_REUSEADDR) nie powiodlo sie." << std::endl;
+    };
 
-    int disable_v6_only = 0;
-    if (setsockopt(server_fd, IPPROTO_IPV6, IPV6_V6ONLY, &disable_v6_only, sizeof(disable_v6_only))) {
-    std::cerr << "setsockopt(IPV6_V6ONLY) failed" << std::endl;
+    sockaddr_in server_addr;
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_port = htons(port);
+    server_addr.sin_addr.s_addr = INADDR_ANY; 
+    memset(&(server_addr.sin_zero), 0, sizeof(server_addr.sin_zero));
+
+    if (bind(m_listen_fd, (struct sockaddr*)&server_addr, sizeof(server_addr)) < 0) {
+        close(m_listen_fd);
+        throw std::runtime_error("Blad bind: Port " + std::to_string(port) + " jest zajety.");
     }
 
-    sockaddr_in6 server_addr6;
-    server_addr6.sin6_family = AF_INET6;
-    server_addr6.sin6_addr = in6addr_any;
-    server_addr6.sin6_port = htons(8080);
-
-    if (bind(server_fd, (struct sockaddr*)&server_addr6, sizeof(server_addr6)) < 0) {
-        std::cerr << "Bind failed" << std::endl;
-        close(server_fd);
-        exit(EXIT_FAILURE);
+    if (listen(m_listen_fd, MAX_CONNECTIONS) < 0) {
+        close(m_listen_fd);
+        throw std::runtime_error("Blad listen.");
     }
 
-    if (listen(server_fd, MAX_CONNECTIONS) < 0) {
-        std::cerr << "Listen failed" << std::endl;
-        close(server_fd);
-        exit(EXIT_FAILURE);
-    }
-
-    return server_fd;
+    pollfd listen_fd_entry = { m_listen_fd, POLLIN, 0 };
+    m_fds.push_back(listen_fd_entry);
     
+    std::cout << "Serwer nasłuchuje na porcie " << port << std::endl;
 }
 
 
-int main(int agc, char *argv[]){
+void Server::handle_new_connection(int listen_fd) {
+    sockaddr_storage client_addr; 
+    socklen_t addr_size = sizeof(client_addr);
+    int client_fd = accept(listen_fd, (struct sockaddr*)&client_addr, &addr_size);
 
+    if (client_fd < 0) {
+        std::cerr << "Blad accept: " << strerror(errno) << std::endl;
+        return;
+    }
+
+    pollfd new_fd_entry = { client_fd, POLLIN, 0 };
+    m_fds.push_back(new_fd_entry);
     
+    Player* new_player = new Player(client_fd, "TEMP_NICK");
+    m_fd_to_player[client_fd] = new_player;
 
-
-
-    return 0;
+    new_player->sendMessage("WELCOME");
+    std::cout << "Nowe połączenie zaakceptowane. FD: " << client_fd << std::endl;
 }
+
+void Server::handle_client_data(size_t i) {
+    int client_fd = m_fds[i].fd;
+    char buffer[BUFFER_SIZE];
+    
+    ssize_t bytes_read = recv(client_fd, buffer, BUFFER_SIZE - 1, 0);
+
+    if (bytes_read <= 0) {
+        std::cout << "Klient rozłączony. FD: " << client_fd << std::endl;
+        cleanup_player(m_fd_to_player[client_fd]); 
+        close(client_fd);
+        m_fds.erase(m_fds.begin() + i); 
+        
+    } else {
+        buffer[bytes_read] = '\0'; 
+        std::cout << "Odebrano od FD " << client_fd << ": " << buffer << std::endl;
+        process_command(m_fd_to_player[client_fd], buffer);
+    }
+}
+ 
+//Reszta metod in progress
+

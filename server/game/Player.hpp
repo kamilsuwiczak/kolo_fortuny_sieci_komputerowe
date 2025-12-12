@@ -32,6 +32,10 @@ public:
         points++;
     }
 
+    void setNick(const std::string& newNick) {
+        nick = newNick;
+    }
+
     virtual int sendMessage(const std::string& message){
         std::string final_message = message + '\n';
         return send(getSockDes(), final_message.c_str(), final_message.length(), 0);
