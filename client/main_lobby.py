@@ -2,6 +2,8 @@ import customtkinter as ctk
 from views.menu_view import MenuView
 from views.set_player_nick_view import NickSetPlayerView
 from views.set_host_nick_view import NickSetHostView
+from views.game_view import GameView
+from views.room_view import RoomView
 
 from dotenv import load_dotenv
 import os
@@ -21,7 +23,7 @@ class App(ctk.CTk):
 
         self.frames = {}
 
-        for F in (MenuView, NickSetPlayerView, NickSetHostView):
+        for F in (MenuView, NickSetPlayerView, NickSetHostView, GameView, RoomView):
             page_name = F.__name__
             frame = F(parent=self.container, controller=self)
             self.frames[page_name] = frame

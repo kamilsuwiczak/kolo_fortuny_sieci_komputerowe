@@ -25,11 +25,11 @@ class MenuView(ctk.CTkFrame):
 
     def go_to_nick_player(self):
         print("Przełączam na widok playera")
-        # self.controller.show_frame("NickSetPlayerView")
+        self.controller.show_frame("NickSetPlayerView")
 
     def go_to_nick_host(self):
         print("Przełączam na widok hosta")
-        # self.controller.show_frame("NickSetHostView")
+        self.controller.show_frame("NickSetHostView")
 
 if __name__ == "__main__":
     app = ctk.CTk()

@@ -37,7 +37,7 @@ class NickSetPlayerView(ctk.CTkFrame):
         nick = self.entry_nick.get()
         code = self.entry_code.get()
         print(f"Nick: {nick}, Kod: {code}")
-        # self.controller.show_frame("GameView")
+        self.controller.show_frame("GameView")
 
 if __name__ == "__main__":
     app = ctk.CTk()

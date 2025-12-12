@@ -3,6 +3,7 @@ import customtkinter as ctk
 from dotenv import load_dotenv
 import os
 
+
 load_dotenv()
 
 class GameView(ctk.CTkFrame):
@@ -51,6 +52,9 @@ class GameView(ctk.CTkFrame):
         self.lbl_score = ctk.CTkLabel(self.score_frame, text="Twoje Punkty: 120", font=("Arial", 20, "bold"))
         self.lbl_score.pack()
 
+        self.lbl_code = ctk.CTkLabel(self.score_frame, text="Kod pokoju: ABC123", font=("Arial", 20, "bold"))
+        self.lbl_code.pack()
+
         self.game_content = ctk.CTkFrame(self.center_frame, fg_color="transparent")
         self.game_content.place(relx=0.5, rely=0.5, anchor="center")
 
@@ -83,6 +87,7 @@ class GameView(ctk.CTkFrame):
 
     def go_back(self):
         print("Powrót do menu")
+        self.controller.show_frame("MenuView")
 
 if __name__ == "__main__":
     app = ctk.CTk()
