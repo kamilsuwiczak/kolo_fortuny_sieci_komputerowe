@@ -4,3 +4,4 @@
 build/
 .vscode/
 .idea/
+client/__pycache__/
