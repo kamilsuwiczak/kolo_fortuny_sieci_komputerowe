@@ -29,6 +29,8 @@ class App(ctk.CTk):
 
         self.frames = {}
 
+        self.is_host = False
+
         for F in (MenuView, NickSetPlayerView, NickSetHostView, GameView, RoomView):
             page_name = F.__name__
             frame = F(parent=self.container, controller=self)
@@ -37,7 +39,7 @@ class App(ctk.CTk):
             frame.grid(row=0, column=0, sticky="nsew")
 
         self.show_frame("MenuView")
-        self.network_client = NetworkClient(os.getenv("SERVER_IP"), int(os.getenv("SERVER_PORT")), self.on_message_received)
+        self.network_client = NetworkClient(os.getenv("SERVER_IP"), int(os.getenv("SERVER_PORT")), self.handle_server_message)
         self.network_client.connect()
 
     def handle_server_message(self, message):
@@ -46,8 +48,8 @@ class App(ctk.CTk):
     def _process_message(self, message):
         if message.startswith("PLAYERS:"):
             raw_data = message.split(":")[1]
-            players_list = raw_data.split(",")
-            
+            players_list = [player.strip() for player in raw_data.split(",")] # ten strip może nie być potrzebny zależy jak wyślemy graczy
+
             if "RoomView" in self.frames:
                 self.frames["RoomView"].update_players(players_list)
 
@@ -58,6 +60,7 @@ class App(ctk.CTk):
             word = message.split(":")[1]
             if "GameView" in self.frames:
                 self.frames["GameView"].update_word(word)
+    
 
     def show_frame(self, page_name):
         """Funkcja, która wyciąga dany widok na wierzch"""

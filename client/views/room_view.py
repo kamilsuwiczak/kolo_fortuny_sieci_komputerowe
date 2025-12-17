@@ -23,9 +23,21 @@ class RoomView(ctk.CTkFrame):
             self.btn_start = ctk.CTkButton(self, text="Rozpocznij grę", command=self.start_game)
             self.btn_start.pack(pady=20)
 
+    def refresh_view(self):
+        if self.controller.is_host:
+            self.btn_start.pack(pady=20)
+        else:
+            self.btn_start.pack_forget()
 
     def start_game(self):
         print("Gra rozpoczęta!")
+    
+    def update_players(self, players):
+        self.players_list.configure(state="normal")
+        self.players_list.delete("0.0", ctk.END)
+        for i, player in enumerate(players):
+            self.players_list.insert(ctk.END, f"{i+1}. {player}\n")
+        self.players_list.configure(state="disabled")
         
 if __name__ == "__main__":
     app = ctk.CTk()
