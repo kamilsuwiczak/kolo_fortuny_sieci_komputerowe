@@ -21,7 +21,7 @@ class NickSetHostView(ctk.CTkFrame):
         nick = self.entry_nick.get()
         print(f"Nick hosta ustawiony na: {nick}")
         # Tutaj możesz wysłać nick do serwera lub przejść do innego widoku
-        self.controller.show_frame("GameView")
+        self.controller.show_frame("RoomView")
 
 if __name__ == "__main__":
     app = ctk.CTk()
