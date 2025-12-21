@@ -59,7 +59,7 @@ void Room::startNewRound(){
     generatePassword(m_password_source);
     generateHashedPassword();
     generateUnrevealedLetterIndices();
-    broadcast("NEW ROUND " + std::to_string(m_current_round));
+    broadcast("NEW_ROUND " + std::to_string(m_current_round));
     sendStateToAll();
 }
 

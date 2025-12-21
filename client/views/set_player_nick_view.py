@@ -1,8 +1,4 @@
 import customtkinter as ctk
-from dotenv import load_dotenv
-import os
-
-load_dotenv()
 
 class NickSetPlayerView(ctk.CTkFrame):
     def __init__(self, parent, controller):
@@ -35,13 +31,16 @@ class NickSetPlayerView(ctk.CTkFrame):
 
     def confirm_nick(self):
         nick = self.entry_nick.get()
-        code = self.entry_code.get()
-        print(f"Nick: {nick}, Kod: {code}")
-        self.controller.show_frame("RoomView")
+        room_code = self.entry_code.get()
 
-if __name__ == "__main__":
-    app = ctk.CTk()
-    app.geometry(os.getenv("WINDOW_SIZE", "1000x600"))
-    nick_view = NickSetPlayerView(parent=app, controller=app)
-    nick_view.pack(fill="both", expand=True)
-    app.mainloop()
+        if not nick or not room_code:
+            return
+
+        self.controller.is_host = False
+        
+        self.controller.network_client.send(f"JOIN_ROOM:{room_code}:{nick}")
+
+        if "RoomView" in self.controller.frames:
+            self.controller.frames["RoomView"].refresh_view()
+        
+        self.controller.show_frame("RoomView")

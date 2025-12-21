@@ -1,12 +1,19 @@
 import customtkinter as ctk
+from tkinter import messagebox
 from dotenv import load_dotenv
 import os
 load_dotenv()
 
 class RoomView(ctk.CTkFrame):
-    def __init__(self, parent, controller, player_type = "player"):
+    def __init__(self, parent, controller):
         super().__init__(parent)
         self.controller = controller
+
+        self.label_code = ctk.CTkLabel(self, text="KOD: ----", font=("Arial", 20, "bold"), text_color="orange")
+        self.label_code.place(relx=0.95, rely=0.05, anchor="ne")
+
+        self.btn_back = ctk.CTkButton(self, text="Wyjdź do menu", command=self.confirm_exit, fg_color="red", hover_color="darkred")
+        self.btn_back.place(relx=0.02, rely=0.98, anchor="sw")
 
         self.label = ctk.CTkLabel(self, text="Pokój gry", font=("Arial", 24))
         self.label.pack(pady=20)
@@ -16,12 +23,9 @@ class RoomView(ctk.CTkFrame):
 
         self.players_list = ctk.CTkTextbox(self, width=400, height=200)
         self.players_list.pack(pady=10)
-      
         self.players_list.configure(state="disabled") 
 
-        if player_type == "host":
-            self.btn_start = ctk.CTkButton(self, text="Rozpocznij grę", command=self.start_game)
-            self.btn_start.pack(pady=20)
+        self.btn_start = ctk.CTkButton(self, text="Rozpocznij grę", command=self.start_game, fg_color="green")
 
     def refresh_view(self):
         if self.controller.is_host:
@@ -29,23 +33,36 @@ class RoomView(ctk.CTkFrame):
         else:
             self.btn_start.pack_forget()
 
+    def set_room_code(self, code):
+        self.label_code.configure(text=f"KOD: {code}")
+
+    def confirm_exit(self):
+        answer = messagebox.askyesno("Wyjście", "Czy na pewno chcesz opuścić lobby?")
+        if answer:
+            self.exit_room()
+
+    def exit_room(self):
+        self.controller.network_client.send("LEAVE_ROOM")
+        self.controller.show_frame("MenuView")
+
     def start_game(self):
-        print("Gra rozpoczęta!")
-    
+        self.controller.network_client.send("START_GAME")
+
     def update_players(self, players):
         self.players_list.configure(state="normal")
-        self.players_list.delete("0.0", ctk.END)
+        self.players_list.delete("0.0", "end")
         for i, player in enumerate(players):
-            self.players_list.insert(ctk.END, f"{i+1}. {player}\n")
+            self.players_list.insert("end", f"{i+1}. {player}\n")
         self.players_list.configure(state="disabled")
-        
+
 if __name__ == "__main__":
     app = ctk.CTk()
     app.geometry(os.getenv("WINDOW_SIZE", "1000x600"))
+    app.is_host = True
     players = ["player1", "player2", "player3"]
-    room_view = RoomView(parent=app, controller=app, player_type="host")
-    room_view.players_list.configure(state="normal")
-    room_view.players_list.insert("0.0", "\n".join(f"{i+1}. {name}" for i, name in enumerate(players)))
-    room_view.players_list.configure(state="disabled")
+    room_view = RoomView(parent=app, controller=app)
     room_view.pack(fill="both", expand=True)
+    room_view.refresh_view()
+    room_view.update_players(players)
+    room_view.set_room_code("TEST")
     app.mainloop()

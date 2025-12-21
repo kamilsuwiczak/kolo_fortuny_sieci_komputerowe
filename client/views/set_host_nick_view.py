@@ -1,7 +1,4 @@
 import customtkinter as ctk
-from dotenv import load_dotenv
-import os
-load_dotenv()
 
 class NickSetHostView(ctk.CTkFrame):
     def __init__(self, parent, controller):
@@ -19,13 +16,14 @@ class NickSetHostView(ctk.CTkFrame):
 
     def confirm_nick(self):
         nick = self.entry_nick.get()
-        print(f"Nick hosta ustawiony na: {nick}")
-        # Tutaj możesz wysłać nick do serwera lub przejść do innego widoku
-        self.controller.show_frame("RoomView")
+        if not nick:
+            return
 
-if __name__ == "__main__":
-    app = ctk.CTk()
-    app.geometry(os.getenv("WINDOW_SIZE", "1000x600"))
-    nick_view = NickSetHostView(parent=app, controller=app)
-    nick_view.pack(fill="both", expand=True)
-    app.mainloop()
+        self.controller.is_host = True
+        
+        self.controller.network_client.send(f"CREATE_ROOM:{nick}")
+
+        if "RoomView" in self.controller.frames:
+            self.controller.frames["RoomView"].refresh_view()
+
+        self.controller.show_frame("RoomView")

@@ -28,7 +28,6 @@ class App(ctk.CTk):
         self.container.grid_columnconfigure(0, weight=1)
 
         self.frames = {}
-
         self.is_host = False
 
         for F in (MenuView, NickSetPlayerView, NickSetHostView, GameView, RoomView):
@@ -60,6 +59,12 @@ class App(ctk.CTk):
             word = message.split(":")[1]
             if "GameView" in self.frames:
                 self.frames["GameView"].update_word(word)
+
+        elif message.startswith("ROOM_CODE:"):
+            room_code = message.split(":")[1]
+            if "RoomView" in self.frames:
+                room_view = self.frames["RoomView"]
+                self.frames["RoomView"].set_room_code(room_code)
     
 
     def show_frame(self, page_name):
