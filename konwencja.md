@@ -12,6 +12,7 @@ wiadomosci wysylane do serwera i z serwera powinny zaczynac sie wielkimi literam
 * ERROR_FULL_ROOM: Pokój jest pełny.
 * ERROR_GAME_STARTED: Gra już się rozpoczęła. Nie można dołączyć do pokoju.
 * ERROR_NICK_TAKEN: Nick jest już zajęty w tym pokoju.
+* ERROR_WRONG_ROOM_CODE
 * PLAYER_LEFT:Marcin - gracz o nicku Marcin wyszedł z gry
 * HOST_CHANGE:Martyna - gracz o nicku Martyna jest nowym hostem
 
