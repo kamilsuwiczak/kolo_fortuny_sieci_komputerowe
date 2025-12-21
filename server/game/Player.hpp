@@ -12,8 +12,8 @@ private:
 
 public:
 
-   Player(int sockDes, const std::string& nick)
-    : sockDes(sockDes), nick(nick), points(0) {}
+   Player(int sockDes)
+    : sockDes(sockDes), nick(""), points(0) {}
 
 
     std::string getNick(){

@@ -60,7 +60,7 @@ void Server::setup_listening_socket(int port) {
         throw std::runtime_error("Blad bind: Port " + std::to_string(port) + " jest zajety.");
     }
 
-    if (listen(m_listen_fd, MAX_CONNECTIONS) < 0) {
+    if (listen(m_listen_fd, SOMAXCONN) < 0) {
         close(m_listen_fd);
         throw std::runtime_error("Blad listen.");
     }

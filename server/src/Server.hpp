@@ -12,7 +12,6 @@
 class Player; 
 class Room; 
 
-#define MAX_CONNECTIONS 10
 #define BUFFER_SIZE 1024
 #define DEFAULT_PORT 8080
 

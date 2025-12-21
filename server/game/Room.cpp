@@ -147,7 +147,7 @@ void Room::gameLoop() {
 void Room::finishGame() {
     std::lock_guard<std::mutex> lock(m_mutex);
     m_game_state = FINISHED;
-    broadcast("GAME OVER ");
+    broadcast("GAME_OVER ");
 }
 
 bool Room::validateNick(const std::string& nick) {
