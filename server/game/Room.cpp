@@ -59,7 +59,7 @@ void Room::startNewRound(){
     generatePassword(m_password_source);
     generateHashedPassword();
     generateUnrevealedLetterIndices();
-    broadcast("NEW ROUND " + std::to_string(m_current_round));
+    broadcast("NEW_ROUND " + std::to_string(m_current_round));
     sendStateToAll();
 }
 
@@ -147,7 +147,7 @@ void Room::gameLoop() {
 void Room::finishGame() {
     std::lock_guard<std::mutex> lock(m_mutex);
     m_game_state = FINISHED;
-    broadcast("GAME OVER ");
+    broadcast("GAME_OVER ");
 }
 
 bool Room::validateNick(const std::string& nick) {
