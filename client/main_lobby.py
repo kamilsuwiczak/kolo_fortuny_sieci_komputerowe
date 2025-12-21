@@ -29,6 +29,7 @@ class App(ctk.CTk):
 
         self.frames = {}
         self.is_host = False
+        self.player_nick = None
 
         for F in (MenuView, NickSetPlayerView, NickSetHostView, GameView, RoomView):
             page_name = F.__name__
@@ -65,6 +66,19 @@ class App(ctk.CTk):
             if "RoomView" in self.frames:
                 room_view = self.frames["RoomView"]
                 self.frames["RoomView"].set_room_code(room_code)
+        
+        elif message.startswith("HOST_CHANGE:"):
+            new_host_nick = message.split(":")[1].strip()
+            
+            if self.player_nick == new_host_nick:
+                self.is_host = True
+                print("Zostałeś nowym hostem!")
+            else:
+                self.is_host = False
+                print(f"Nowym hostem jest {new_host_nick}")
+
+            if "RoomView" in self.frames:
+                self.frames["RoomView"].refresh_view()
     
 
     def show_frame(self, page_name):

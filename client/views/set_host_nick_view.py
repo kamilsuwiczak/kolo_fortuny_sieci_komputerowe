@@ -20,6 +20,7 @@ class NickSetHostView(ctk.CTkFrame):
             return
 
         self.controller.is_host = True
+        self.controller.player_nick = nick
         
         self.controller.network_client.send(f"CREATE_ROOM:{nick}")
 
