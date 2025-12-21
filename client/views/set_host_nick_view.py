@@ -32,3 +32,8 @@ class NickSetHostView(ctk.CTkFrame):
         self.controller.player_nick = nick
         
         self.controller.network_client.send(f"CREATE_ROOM:{nick}")
+
+        if "RoomView" in self.controller.frames:
+            self.controller.frames["RoomView"].refresh_view()
+
+        self.controller.show_frame("RoomView")
