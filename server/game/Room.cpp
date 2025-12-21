@@ -60,7 +60,7 @@ void Room::startNewRound(){
     generatePassword(m_password_source);
     generateHashedPassword();
     generateUnrevealedLetterIndices();
-    broadcast("NEW_ROUND " + std::to_string(m_current_round));
+    broadcast("NEW_ROUND:" + std::to_string(m_current_round));
     sendStateToAll();
 }
 
@@ -74,10 +74,10 @@ void Room::processGuess(Player* player, const std::string& guess) {
     if (guess == m_password) {
         m_round_over = true;
         player->addPoint();
-        broadcast("CORRECT " + player->getNick() + " " + guess);
+        broadcast("CORRECT:" + player->getNick() + ";GUESS:" + guess);
         m_guess_cv.notify_all(); 
     } else {
-        broadcast("INCORRECT " + player->getNick() + " " + guess);
+        broadcast("INCORRECT:" + player->getNick() + ";GUESS:" + guess);
     }
 }
 
@@ -94,7 +94,7 @@ void Room::broadcast(const std::string& message) {
 }
 
 void Room::sendStateToAll() {
-    broadcast("HASHPASS " + m_hashed_password);
+    broadcast("HASHPASS:" + m_hashed_password);
 }
 
 void Room::gameLoop() {
@@ -148,7 +148,7 @@ void Room::gameLoop() {
 void Room::finishGame() {
     std::lock_guard<std::mutex> lock(m_mutex);
     m_game_state = FINISHED;
-    broadcast("GAME_OVER ");
+    broadcast("GAME_OVER");
 }
 
 bool Room::validateNick(const std::string& nick) {
@@ -165,16 +165,16 @@ bool Room::addPlayer(Player* player) {
     std::lock_guard<std::mutex> lock(m_mutex);
     
     if (m_players_list.size() >= MAX_PLAYERS) {
-        player->sendMessage("ERROR: Pokój jest pełny.");
+        player->sendMessage("ERROR_FULL_ROOM: Pokój jest pełny.");
         return false; 
     }
 
     if(m_game_state != WAITING) {
-        player->sendMessage("ERROR: Gra już się rozpoczęła. Nie można dołączyć do pokoju.");
+        player->sendMessage("ERROR_GAME_STARTED: Gra już się rozpoczęła. Nie można dołączyć do pokoju.");
         return false; 
     }
     if (!validateNick(player->getNick())) {
-        player->sendMessage("ERROR: Nick jest już zajęty w tym pokoju.");
+        player->sendMessage("ERROR_NICK_TAKEN: Nick jest już zajęty w tym pokoju.");
         return false; 
     }
 
@@ -197,11 +197,11 @@ Player* Room::removePlayer(int sockDes) {
         
     if (removed_player) {
         m_players_list.erase(it, m_players_list.end());
-        broadcast("PLAYER_LEFT " + removed_player->getNick());
+        broadcast("PLAYER_LEFT:" + removed_player->getNick());
         if (removed_player == m_host) {
             if (!m_players_list.empty()) {
                 m_host = m_players_list.front(); 
-                broadcast("HOST_CHANGE Nowym hostem jest: " + m_host->getNick());
+                broadcast("HOST_CHANGE:" + m_host->getNick());
             } else {
                 m_host = nullptr; 
             }
