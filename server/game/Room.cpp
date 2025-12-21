@@ -17,6 +17,7 @@ Room::~Room() {}
 void Room::generatePassword(const std::vector <std::string>& WORDS){
     std::random_device rd;               
     std::mt19937 gen(rd());
+    
     std::uniform_int_distribution<> dist(0, WORDS.size() - 1 );
 
     m_password = WORDS[dist(gen)];
