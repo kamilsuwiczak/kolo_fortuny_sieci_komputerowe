@@ -59,6 +59,7 @@ private:
     GameState& getGameStateRef() { return m_game_state; }
     bool& getRoundOverRef() { return m_round_over; }
     int getPlayersCount() const { return m_players_list.size(); }
+    std::vector<Player*> getPlayersList() const { return m_players_list; }
     
     // metody rundy i gry
     void generatePassword(const std::vector <std::string>& WORDS);

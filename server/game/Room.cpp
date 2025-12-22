@@ -179,6 +179,7 @@ bool Room::addPlayer(Player* player) {
     }
 
     if (!player) return false;
+    broadcast("PLAYER_JOINED:" + player->getNick());
     m_players_list.push_back(player);
     return true;
 }

@@ -10,7 +10,6 @@
 #include "../game/Player.hpp"
 #include "../game/Room.hpp"
 
-
 Server::Server(int port) : m_listen_fd(-1) {
     std::cout << "Inicjalizacja serwera..." << std::endl;
     setup_listening_socket(port);
@@ -71,7 +70,6 @@ void Server::setup_listening_socket(int port) {
     std::cout << "Serwer nasłuchuje na porcie " << port << std::endl;
 }
 
-
 void Server::handle_new_connection(int listen_fd) {
     sockaddr_storage client_addr; 
     socklen_t addr_size = sizeof(client_addr);
@@ -85,7 +83,7 @@ void Server::handle_new_connection(int listen_fd) {
     pollfd new_fd_entry = { client_fd, POLLIN, 0 };
     m_fds.push_back(new_fd_entry);
     
-    Player* new_player = new Player(client_fd, "TEMP_NICK");
+    Player* new_player = new Player(client_fd);
     m_fd_to_player[client_fd] = new_player;
 
     new_player->sendMessage("WELCOME");
@@ -110,6 +108,75 @@ void Server::handle_client_data(size_t i) {
         process_command(m_fd_to_player[client_fd], buffer);
     }
 }
+
+void Server::process_command(Player* player, const std::string& command_line) {
+    std::istringstream iss(command_line);
+    std::string cmd;
+    iss >> cmd;
+
+    if (cmd == "JOIN_ROOM") {
+        std::string room_id_str, nick;
+        iss >> room_id_str >> nick;
+
+        if (room_id_str.empty() || nick.empty()) {
+            player->sendMessage("ERROR: Room ID i Nick są wymagane.");
+            return;
+        }
+    
+        if (nick.length() > 20) {
+            player->sendMessage("ERROR_INVALID_NICK: Nick jest za długi.");
+            return;
+        }
+        // Tu powinno się dodać więcej walidacji nicku
+
+        int r_id = std::stoi(room_id_str);
+        auto it = m_active_rooms.find(r_id);
+        
+        if (it == m_active_rooms.end()) {
+            player->sendMessage("ERROR_ROOM_NOT_FOUND: Pokój " + room_id_str + " nie istnieje.");
+            return;
+        }
+
+        Room* room = it->second;
+
+        player->setNick(nick);
+        
+        if (room->addPlayer(player)) {
+            m_player_to_room[player] = room; 
+            player->sendMessage("JOIN_SUCCESS:" + std::to_string(r_id));
+            std::string players_msg = "PLAYERS:";
+            std::vector<Player*> current_players = room->getPlayersList();
+            for (auto p : current_players) {
+                players_msg += p->getNick() + ",";
+            }
+            if (!players_msg.empty()) {
+                players_msg.pop_back();
+            }
+            player->sendMessage(players_msg);
+        }
+    }
+
+    if (cmd == "CREATE_ROOM") {
+        if (m_player_to_room.count(player)) {
+            player->sendMessage("ERROR: Już jesteś w pokoju.");
+            return;
+        }
+
+        static int next_room_number = 1; 
+        
+        Room* new_room = new Room(next_room_number, player, m_password_source);
+        
+        if (new_room->addPlayer(player)) {
+            m_active_rooms[next_room_number] = new_room;
+            m_player_to_room[player] = new_room;
+            
+            player->sendMessage("ROOM_CREATED:" + std::to_string(next_room_number));
+            next_room_number = (next_room_number % 9999) + 1;
+        } else {
+            delete new_room;
+            player->sendMessage("ERROR: Nie udało się stworzyć pokoju.");
+        }
+    }
+}
  
-//Reszta metod in progress
 
