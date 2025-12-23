@@ -61,7 +61,7 @@ void Room::startNewRound(){
     generateHashedPassword();
     generateUnrevealedLetterIndices();
     broadcast("NEW_ROUND:" + std::to_string(m_current_round));
-    sendStateToAll();
+    broadcast("HASHPASS:" + m_hashed_password);
 }
 
 
@@ -82,19 +82,23 @@ void Room::processGuess(Player* player, const std::string& guess) {
 }
 
 void Room::startGame(int maxRound){
+    if (m_game_state == IN_PROGRESS) {
+        return; 
+    }
+    for (auto& player : m_players_list) {
+        player->resetPoints();
+    }
     m_max_round = maxRound;
     m_game_state = IN_PROGRESS;
     m_game_thread = std::thread(&Room::gameLoop, this);
+    m_game_thread.detach();
+
 }
 
 void Room::broadcast(const std::string& message) {
     for (auto& player : m_players_list) {
         player->sendMessage(message);
     }
-}
-
-void Room::sendStateToAll() {
-    broadcast("HASHPASS:" + m_hashed_password);
 }
 
 void Room::gameLoop() {
@@ -117,7 +121,7 @@ void Room::gameLoop() {
             if (timed_out && m_game_state == IN_PROGRESS) {
                 if (revealRandomLetter()) {
                     std::cout << "Revealed a letter: " << m_hashed_password << std::endl;
-                    sendStateToAll();
+                    broadcast("HASHPASS:" + m_hashed_password);
                 }
             } 
         }

@@ -24,7 +24,7 @@ wiadomosci wysylane do serwera i z serwera powinny zaczynac sie wielkimi literam
 
 **Wiadomosci wysylane przez clienta:**
 * GUESS slowo - zgadywane slowo
-* START_GAME - wiadomosc wysylana w chwili startu gry
+* START_GAME max_rounds - wiadomosc wysylana w chwili startu gry
 * LEAVE_GAME - wiadomosc wysylana w chwili gdy ktos chce opuscic pokoj
 * JOIN_ROOM nr_pokoju nick_gracza - prośba o dołączenie do pokoju
 * CREATE_ROOM nick - prośba o utworzenie pokoju

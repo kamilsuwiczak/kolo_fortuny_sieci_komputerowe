@@ -32,6 +32,10 @@ public:
         points++;
     }
 
+    void resetPoints(){
+        points = 0;
+    }
+
     void setNick(const std::string& newNick) {
         nick = newNick;
     }

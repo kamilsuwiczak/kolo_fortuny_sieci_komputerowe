@@ -145,6 +145,7 @@ void Server::cleanup_player(Player* player) {
     delete player;
 }
 
+//Tu sie zrobil mega sphagetti code XD trzeba mapowac komendy do osobnych metod
 void Server::process_command(Player* player, const std::string& command_line) {
     std::istringstream iss(command_line);
     std::string cmd;
@@ -231,6 +232,34 @@ void Server::process_command(Player* player, const std::string& command_line) {
             delete new_room;
             player->sendMessage("ERROR: Nie udało się stworzyć pokoju.");
         }
+    }
+
+    if (cmd == "START_GAME") {
+        if (!m_player_to_room.count(player)) {
+            player->sendMessage("ERROR: Nie jesteś w pokoju.");
+            return;
+        }
+
+        Room* room = m_player_to_room[player];
+        if (room->getPlayersList().empty() || room->getPlayersList().front() != player) {
+            player->sendMessage("ERROR_NOT_HOST: Tylko gospodarz może rozpocząć grę.");
+            return;
+        }
+
+        std::string max_rounds_str;
+        iss >> max_rounds_str;
+        int max_rounds = 3; 
+        try {
+            max_rounds = std::stoi(max_rounds_str);
+            if (max_rounds <= 0 || max_rounds > 20) {
+                throw std::out_of_range("Invalid range");
+            }
+        } catch (const std::exception& e) {
+            player->sendMessage("ERROR_INVALID_ROUNDS: Nieprawidłowa liczba rund.");
+            return;
+        }
+
+        room->startGame(max_rounds);
     }
 
 }

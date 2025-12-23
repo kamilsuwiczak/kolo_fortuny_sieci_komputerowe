@@ -41,7 +41,6 @@ private:
     
     void broadcast(const std::string& message); // Wysyłanie wiadomości do wszystkich
     void gameLoop(); 
-    void sendStateToAll(); // Wysyła m_hashed_password
     void finishGame();
     public:
     
