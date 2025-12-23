@@ -79,14 +79,14 @@ class GameView(ctk.CTkFrame):
         guess = self.entry.get()
         if not guess: return
 
-        print(f"Wysyłam: {guess}")
+        self.controller.network_client.send(f"GUESS {guess}")
     
         self.history_text.configure(state="normal")
         self.history_text.insert("0.0", f"{guess}\n")
         self.history_text.configure(state="disabled")
 
         self.entry.delete(0, 'end')
-        self.entry.focus() 
+        self.entry.focus()
 
     def go_back(self):
         print("Powrót do menu")
@@ -111,6 +111,18 @@ class GameView(ctk.CTkFrame):
             self.timer_running = False
             self.entry.configure(state="disabled")
             self.btn_submit.configure(state="disabled")
+    
+    def start_new_round(self):
+        
+        self.entry.configure(state="normal")
+        self.btn_submit.configure(state="normal")
+        self.entry.delete(0, 'end')
+
+        self.history_text.configure(state="normal")
+        self.history_text.delete("0.0", "end")
+        self.history_text.configure(state="disabled")
+
+        self.stop_timer() 
 
 if __name__ == "__main__":
     app = ctk.CTk()
