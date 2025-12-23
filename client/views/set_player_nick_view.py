@@ -42,6 +42,18 @@ class NickSetPlayerView(ctk.CTkFrame):
         if not nick or not code:
             self.show_error("Wypełnij wszystkie pola!")
             return
+        
+        if len(nick) > 50:
+            self.show_error("Nick jest za długi!")
+            return
+        
+        if ' ' in nick:
+            self.show_error("Nick nie może zawierać spacji!")
+            return
+
+        if ' ' in code: 
+            self.show_error("Kod pokoju nie może zawierać spacji!")
+            return
 
         self.show_error("")
 
@@ -49,4 +61,4 @@ class NickSetPlayerView(ctk.CTkFrame):
         self.controller.player_nick = nick
         self.controller.pending_room_code = code
         
-        self.controller.network_client.send(f"JOIN_ROOM:{code}:{nick}")
+        self.controller.network_client.send(f"JOIN_ROOM {code} {nick}")
