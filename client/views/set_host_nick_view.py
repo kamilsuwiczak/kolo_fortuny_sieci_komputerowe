@@ -25,7 +25,7 @@ class NickSetHostView(ctk.CTkFrame):
         if not nick:
             self.show_error("Podaj nick!")
             return
-        if len(nick) > 50:
+        if len(nick) > 20:
             self.show_error("Nick jest za długi!")
             return
         

@@ -1,8 +1,6 @@
-
 import customtkinter as ctk
 from dotenv import load_dotenv
 import os
-
 
 load_dotenv()
 
@@ -50,10 +48,13 @@ class GameView(ctk.CTkFrame):
         self.score_frame.place(relx=0.98, rely=0.02, anchor="ne")
         
         self.lbl_score = ctk.CTkLabel(self.score_frame, text="Twoje Punkty: 120", font=("Arial", 20, "bold"))
-        self.lbl_score.pack()
+        self.lbl_score.pack(anchor="e")
 
         self.lbl_code = ctk.CTkLabel(self.score_frame, text="Kod pokoju: ABC123", font=("Arial", 20, "bold"))
-        self.lbl_code.pack()
+        self.lbl_code.pack(anchor="e")
+
+        self.lbl_timer = ctk.CTkLabel(self.score_frame, text="Czas: 60s", font=("Arial", 20, "bold"), text_color="orange")
+        self.lbl_timer.pack(anchor="e", pady=(5, 0))
 
         self.game_content = ctk.CTkFrame(self.center_frame, fg_color="transparent")
         self.game_content.place(relx=0.5, rely=0.5, anchor="center")
@@ -72,6 +73,8 @@ class GameView(ctk.CTkFrame):
         self.btn_submit = ctk.CTkButton(self.input_frame, text="Zatwierdź", command=self.send_guess, height=40, fg_color="green", hover_color="darkgreen")
         self.btn_submit.pack(side="left")
 
+        self.start_timer()
+
     def send_guess(self, event=None):
         guess = self.entry.get()
         if not guess: return
@@ -87,7 +90,27 @@ class GameView(ctk.CTkFrame):
 
     def go_back(self):
         print("Powrót do menu")
+        self.stop_timer()
         self.controller.show_frame("MenuView")
+
+    def start_timer(self):
+        self.time_left = 60
+        self.timer_running = True
+        self.update_timer()
+
+    def stop_timer(self):
+        self.timer_running = False
+
+    def update_timer(self):
+        if self.timer_running and self.time_left > 0:
+            self.lbl_timer.configure(text=f"Czas: {self.time_left}s", text_color="orange")
+            self.time_left -= 1
+            self.after(1000, self.update_timer)
+        elif self.time_left == 0:
+            self.lbl_timer.configure(text="KONIEC CZASU!", text_color="red")
+            self.timer_running = False
+            self.entry.configure(state="disabled")
+            self.btn_submit.configure(state="disabled")
 
 if __name__ == "__main__":
     app = ctk.CTk()
@@ -99,5 +122,3 @@ if __name__ == "__main__":
     game_view.pack(fill="both", expand=True)
     
     app.mainloop()
-
-

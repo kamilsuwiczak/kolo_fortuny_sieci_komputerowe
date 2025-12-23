@@ -43,7 +43,7 @@ class NickSetPlayerView(ctk.CTkFrame):
             self.show_error("Wypełnij wszystkie pola!")
             return
         
-        if len(nick) > 50:
+        if len(nick) > 20:
             self.show_error("Nick jest za długi!")
             return
         
