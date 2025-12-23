@@ -86,6 +86,10 @@ class App(ctk.CTk):
 
         elif message == "START_GAME":
             self.show_frame("GameView")
+        
+        elif message.startswith("NEW_ROUND"):
+            if "GameView" in self.frames:
+                self.frames["GameView"].start_new_round()
 
         elif message.startswith("WORD:"):
             word = message.split(":")[1]
