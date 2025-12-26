@@ -38,10 +38,11 @@ private:
     int m_current_round;
     int m_max_round;
     
-    
     void broadcast(const std::string& message); // Wysyłanie wiadomości do wszystkich
     void gameLoop(); 
     void finishGame();
+    void sendLeaderboard();
+
     public:
     
     

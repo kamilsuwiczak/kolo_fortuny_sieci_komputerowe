@@ -12,7 +12,20 @@ m_room_number(roomNumber),m_host(host),m_password_source(passwordSource),m_curre
     m_game_state = WAITING;
 }
 
-Room::~Room() {}
+Room::~Room() {
+
+    {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        m_game_state = FINISHED; 
+        m_round_over = true;
+    }
+    m_guess_cv.notify_all();
+
+    if (m_game_thread.joinable()) {
+        m_game_thread.join(); 
+    }
+    
+}
 
 void Room::generatePassword(const std::vector <std::string>& WORDS){
     std::random_device rd;               
@@ -25,13 +38,13 @@ void Room::generatePassword(const std::vector <std::string>& WORDS){
 
 void Room::generateHashedPassword(){
     m_hashed_password = "";
-    for (int i = 0; i<m_password.length();i++){
+    for (size_t i = 0; i<m_password.length();i++){
         m_hashed_password += "_";
     }
 }
 
 void Room::generateUnrevealedLetterIndices(){
-    for (int i =0;i<m_password.length();i++){
+    for (size_t i = 0;i<m_password.length();i++){
         m_unrevealed_indices.push_back(i);
     }
 }
@@ -88,6 +101,7 @@ void Room::startGame(int maxRound){
     for (auto& player : m_players_list) {
         player->resetPoints();
     }
+    m_current_round = 0;
     m_max_round = maxRound;
     m_game_state = IN_PROGRESS;
     m_game_thread = std::thread(&Room::gameLoop, this);
@@ -101,8 +115,21 @@ void Room::broadcast(const std::string& message) {
     }
 }
 
+void Room::sendLeaderboard() {
+    std::lock_guard<std::mutex> lock(m_mutex);
+    std::string leaderboard = "LEADERBOARD:";
+    for (const auto& player : m_players_list) {
+        leaderboard += player->getNick() + "," + std::to_string(player->getPoints()) + ";";
+    }
+    if (!leaderboard.empty()) {
+        leaderboard.pop_back(); 
+    }
+    broadcast(leaderboard);
+}
+
 void Room::gameLoop() {
     while (true) {
+        
         {
             std::lock_guard<std::mutex> lock(m_mutex);
             if (m_current_round >= m_max_round || m_game_state != IN_PROGRESS) {
@@ -110,42 +137,49 @@ void Room::gameLoop() {
             }
         }
 
-        startNewRound(); 
+        startNewRound();
+        sendLeaderboard();
         std::unique_lock<std::mutex> lock(m_mutex); 
         while (m_game_state == IN_PROGRESS) { 
             if (m_unrevealed_indices.size() <= m_password.length() * 0.5 || m_round_over) {
                 break; 
             }
-            bool timed_out = m_guess_cv.wait_for(lock, std::chrono::seconds(10)) == std::cv_status::timeout;
             
-            if (timed_out && m_game_state == IN_PROGRESS) {
+            bool notified = m_guess_cv.wait_for(lock, std::chrono::seconds(5), [this] {
+                return m_round_over || m_game_state != IN_PROGRESS;
+            });
+            
+            if (!notified && m_game_state == IN_PROGRESS) {
                 if (revealRandomLetter()) {
                     std::cout << "Revealed a letter: " << m_hashed_password << std::endl;
                     broadcast("HASHPASS:" + m_hashed_password);
                 }
             } 
         }
+
+        if (m_game_state == IN_PROGRESS && !m_round_over) {
+            broadcast("TIMEOUT: Ostatnia szansa! 10 sekund...");
+            m_guess_cv.wait_for(lock, std::chrono::seconds(10), [this] {
+                return m_round_over || m_game_state != IN_PROGRESS;
+            });
+        }
+
         if (m_game_state == IN_PROGRESS) {
-            
-            bool was_guessed = m_round_over; 
-            
-            if (!was_guessed) {
-                broadcast("TIMEOUT: Ostatnia szansa. Oczekiwanie 10s...");
-                lock.unlock();
-                std::this_thread::sleep_for(std::chrono::seconds(10)); //To do zmiany
-                lock.lock(); 
+            if (m_round_over) {
+                broadcast("INFO: Hasło odgadnięte! Przerwa 3s.");
             } else {
-                std::cout << "Password guessed by a player." << std::endl;
-                broadcast("INFO: Przejście do następnej rundy za 3s.");
-                lock.unlock(); 
-                std::this_thread::sleep_for(std::chrono::seconds(3)); 
-                lock.lock();
+                broadcast("ROUND_OVER: Nikt nie zgadł. Hasło to: " + m_password);
             }
+            
+            lock.unlock();
+            std::this_thread::sleep_for(std::chrono::seconds(3));
+            lock.lock();
         }
     }
 
     if (m_game_state != FINISHED) { 
         finishGame();
+        sendLeaderboard();
     }
 }
 
