@@ -35,7 +35,15 @@ private:
     
     void process_command(Player* player, const std::string& command_line);
 
+    void remove_player_from_room(Player* player);
+
     bool validate_nick(const std::string& nick);
+
+    void handle_join_room(Player* player, std::istringstream& iss);
+    void handle_create_room(Player* player, std::istringstream& iss);
+    void handle_start_game(Player* player, std::istringstream& iss);
+    void handle_guess(Player* player, std::istringstream& iss);
+    void handle_leave_game(Player* player);
 
 public:
     Server(int port = DEFAULT_PORT);

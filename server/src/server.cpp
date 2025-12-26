@@ -127,141 +127,173 @@ bool Server::validate_nick(const std::string& nick) {
     return true;
 }
 
-void Server::cleanup_player(Player* player) {
+void Server::remove_player_from_room(Player* player) {
     if (m_player_to_room.count(player)) {
         Room* room = m_player_to_room[player];
+        
         room->removePlayer(player->getSockDes());
         m_player_to_room.erase(player);
+
         if (room->getPlayersList().empty()) {
             int r_id = room->getRoomNumber();
-            std::cout << "Pokój " << r_id << " jest pusty. Usuwanie..." << std::endl;
-            
             m_active_rooms.erase(r_id);
             delete room; 
+            std::cout << "Pokój " << r_id << " usunięty (pusty)." << std::endl;
         }
     }
+}
+
+void Server::cleanup_player(Player* player) {
+    remove_player_from_room(player);
     
     m_fd_to_player.erase(player->getSockDes());
     delete player;
 }
 
-//Tu sie zrobil mega sphagetti code XD trzeba mapowac komendy do osobnych metod
+void Server::handle_join_room(Player* player, std::istringstream& iss) {
+    std::string room_id_str, nick;
+    iss >> room_id_str >> nick;
+
+    if (m_player_to_room.count(player)) {
+        player->sendMessage("ERROR: Już jesteś w pokoju.");
+        return;
+    }
+
+    if (room_id_str.empty()) {
+        player->sendMessage("ERROR_INVALID_ROOM_ID: Nieprawidłowy identyfikator pokoju.");
+        return;
+    }
+
+    if (!validate_nick(nick)) {
+        player->sendMessage("ERROR_INVALID_NICK: Nieprawidłowy nick.");
+        return;
+    }
+
+    int r_id;
+    try {
+        r_id = std::stoi(room_id_str);
+    } catch (const std::exception& e) {
+        player->sendMessage("ERROR_INVALID_ROOM_ID: Nieprawidłowy identyfikator pokoju.");
+        return;
+    }
+
+    auto it = m_active_rooms.find(r_id);
+    if (it == m_active_rooms.end()) {
+        player->sendMessage("ERROR_ROOM_NOT_FOUND: Pokój " + room_id_str + " nie istnieje.");
+        return;
+    }
+
+    Room* room = it->second;
+    player->setNick(nick);
+    
+    if (room->addPlayer(player)) {
+        m_player_to_room[player] = room;
+        player->sendMessage("JOIN_SUCCESS:" + std::to_string(r_id));
+        std::string players_msg = "PLAYERS:";
+        std::vector<Player*> current_players = room->getPlayersList();
+        for (auto p : current_players) {
+            players_msg += p->getNick() + ",";
+        }
+        if (!players_msg.empty()) {
+            players_msg.pop_back();
+        }
+        player->sendMessage(players_msg);
+    }
+}
+
+void Server::handle_create_room(Player* player, std::istringstream& iss) {
+    if (m_player_to_room.count(player)) {
+        player->sendMessage("ERROR: Już jesteś w pokoju.");
+        return;
+    }
+
+    std::string nick;
+    iss >> nick;
+    if (!validate_nick(nick)) {
+        player->sendMessage("ERROR_INVALID_NICK: Nieprawidłowy nick.");
+        return;
+    }
+    player->setNick(nick);
+
+    static int next_room_number = 1;
+
+    Room* new_room = new Room(next_room_number, player, m_password_source);
+
+    m_active_rooms[next_room_number] = new_room;
+    m_player_to_room[player] = new_room;
+    player->sendMessage("ROOM_CREATED:" + std::to_string(next_room_number));
+    next_room_number = (next_room_number % 9999) + 1;
+
+}
+
+void Server::handle_start_game(Player* player, std::istringstream& iss) {
+    if (!m_player_to_room.count(player)) {
+        player->sendMessage("ERROR: Nie jesteś w pokoju.");
+        return;
+    }
+
+    Room* room = m_player_to_room[player];
+    if (room->getPlayersList().empty() || room->getPlayersList().front() != player) {
+        player->sendMessage("ERROR_NOT_HOST: Tylko gospodarz może rozpocząć grę.");
+        return;
+    }
+
+    std::string max_rounds_str;
+    iss >> max_rounds_str;
+    int max_rounds = 3;
+    try {
+        max_rounds = std::stoi(max_rounds_str);
+        if (max_rounds <= 0 || max_rounds > 20) {
+            throw std::out_of_range("Invalid range");
+        }
+    } catch (const std::exception& e) {
+        player->sendMessage("ERROR_INVALID_ROUNDS: Nieprawidłowa liczba rund.");
+        return;
+    }
+
+    room->startGame(max_rounds);
+}
+
+void Server::handle_guess(Player* player, std::istringstream& iss) {
+    if (!m_player_to_room.count(player)) {
+        player->sendMessage("ERROR: Nie jesteś w pokoju.");
+        return;
+    }
+
+    Room* room = m_player_to_room[player];
+    std::string guess;
+    iss >> guess;
+
+    room->processGuess(player, guess);
+}
+
+void Server::handle_leave_game(Player* player) {
+    remove_player_from_room(player);
+    player->sendMessage("LEFT_ROOM");
+
+}
+
 void Server::process_command(Player* player, const std::string& command_line) {
     std::istringstream iss(command_line);
     std::string cmd;
     iss >> cmd;
 
     if (cmd == "JOIN_ROOM") {
-        std::string room_id_str, nick;
-        iss >> room_id_str >> nick;
-
-        if (m_player_to_room.count(player)) {
-            player->sendMessage("ERROR: Już jesteś w pokoju.");
-            return;
-        }
-
-        if (room_id_str.empty()) {
-            player->sendMessage("ERROR_INVALID_ROOM_ID: Nieprawidłowy identyfikator pokoju.");
-            return;
-        }
-
-        if (!validate_nick(nick)) {
-            player->sendMessage("ERROR_INVALID_NICK: Nieprawidłowy nick.");
-            return;
-        }
-
-        int r_id;
-        try {
-            r_id = std::stoi(room_id_str);
-        } catch (const std::exception& e) {
-            player->sendMessage("ERROR_INVALID_ROOM_ID: Nieprawidłowy identyfikator pokoju.");
-            return;
-        }
-
-        auto it = m_active_rooms.find(r_id);
-        
-        if (it == m_active_rooms.end()) {
-            player->sendMessage("ERROR_ROOM_NOT_FOUND: Pokój " + room_id_str + " nie istnieje.");
-            return;
-        }
-
-        Room* room = it->second;
-
-        player->setNick(nick);
-        
-        if (room->addPlayer(player)) {
-            m_player_to_room[player] = room; 
-            player->sendMessage("JOIN_SUCCESS:" + std::to_string(r_id));
-            std::string players_msg = "PLAYERS:";
-            std::vector<Player*> current_players = room->getPlayersList();
-            for (auto p : current_players) {
-                players_msg += p->getNick() + ",";
-            }
-            if (!players_msg.empty()) {
-                players_msg.pop_back();
-            }
-            player->sendMessage(players_msg);
-        }
+        handle_join_room(player, iss);
+    } else if (cmd == "CREATE_ROOM") {
+        handle_create_room(player, iss);
+    } else if (cmd == "START_GAME") {
+        handle_start_game(player, iss);
     }
-
-    if (cmd == "CREATE_ROOM") {
-        if (m_player_to_room.count(player)) {
-            player->sendMessage("ERROR: Już jesteś w pokoju.");
-            return;
-        }
-
-        std::string nick;
-        iss >> nick;
-        if (!validate_nick(nick)) {
-            player->sendMessage("ERROR_INVALID_NICK: Nieprawidłowy nick.");
-            return;
-        }
-        player->setNick(nick);
-
-        static int next_room_number = 1; 
-        
-        Room* new_room = new Room(next_room_number, player, m_password_source);
-        
-        if (new_room->addPlayer(player)) {
-            m_active_rooms[next_room_number] = new_room;
-            m_player_to_room[player] = new_room;
-            
-            player->sendMessage("ROOM_CREATED:" + std::to_string(next_room_number));
-            next_room_number = (next_room_number % 9999) + 1;
-        } else {
-            delete new_room;
-            player->sendMessage("ERROR: Nie udało się stworzyć pokoju.");
-        }
+    else if (cmd == "GUESS") {
+        handle_guess(player, iss);
+    } 
+    else if (cmd == "LEAVE_ROOM") {
+        handle_leave_game(player);
     }
-
-    if (cmd == "START_GAME") {
-        if (!m_player_to_room.count(player)) {
-            player->sendMessage("ERROR: Nie jesteś w pokoju.");
-            return;
-        }
-
-        Room* room = m_player_to_room[player];
-        if (room->getPlayersList().empty() || room->getPlayersList().front() != player) {
-            player->sendMessage("ERROR_NOT_HOST: Tylko gospodarz może rozpocząć grę.");
-            return;
-        }
-
-        std::string max_rounds_str;
-        iss >> max_rounds_str;
-        int max_rounds = 3; 
-        try {
-            max_rounds = std::stoi(max_rounds_str);
-            if (max_rounds <= 0 || max_rounds > 20) {
-                throw std::out_of_range("Invalid range");
-            }
-        } catch (const std::exception& e) {
-            player->sendMessage("ERROR_INVALID_ROUNDS: Nieprawidłowa liczba rund.");
-            return;
-        }
-
-        room->startGame(max_rounds);
+    else {
+        player->sendMessage("ERROR_UNKNOWN_COMMAND: Niepoprawna wiadomość.");
     }
-
 }
 
 void Server::run() {
