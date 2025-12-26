@@ -25,7 +25,6 @@ class GameView(ctk.CTkFrame):
         
         self.ranking_text = ctk.CTkTextbox(self.ranking_frame, height=100)
         self.ranking_text.pack(padx=5, pady=5, fill="both", expand=True)
-        self.ranking_text.insert("0.0", "1. GraczA - 500\n2. GraczB - 300\n3. Ty - 100")
         self.ranking_text.configure(state="disabled")
 
         self.history_frame = ctk.CTkFrame(self)
@@ -47,19 +46,22 @@ class GameView(ctk.CTkFrame):
         self.score_frame = ctk.CTkFrame(self.center_frame, fg_color="transparent")
         self.score_frame.place(relx=0.98, rely=0.02, anchor="ne")
         
-        self.lbl_score = ctk.CTkLabel(self.score_frame, text="Twoje Punkty: 120", font=("Arial", 20, "bold"))
+        self.lbl_score = ctk.CTkLabel(self.score_frame, text="Twoje Punkty: 0", font=("Arial", 20, "bold"))
         self.lbl_score.pack(anchor="e")
 
-        self.lbl_code = ctk.CTkLabel(self.score_frame, text="Kod pokoju: ABC123", font=("Arial", 20, "bold"))
+        self.lbl_code = ctk.CTkLabel(self.score_frame, text="Kod pokoju: ---", font=("Arial", 20, "bold"))
         self.lbl_code.pack(anchor="e")
 
         self.lbl_timer = ctk.CTkLabel(self.score_frame, text="Czas: 60s", font=("Arial", 20, "bold"), text_color="orange")
         self.lbl_timer.pack(anchor="e", pady=(5, 0))
 
+        self.time_left = 60
+        self.timer_running = False
+
         self.game_content = ctk.CTkFrame(self.center_frame, fg_color="transparent")
         self.game_content.place(relx=0.5, rely=0.5, anchor="center")
 
-        self.label_word = ctk.CTkLabel(self.game_content, text="_ _ _ _ _ _ _ _ ", font=("Courier", 60, "bold"))
+        self.label_word = ctk.CTkLabel(self.game_content, text="", font=("Courier", 60, "bold"))
         self.label_word.pack(pady=(0, 40))
 
         self.input_frame = ctk.CTkFrame(self.game_content, fg_color="transparent")
@@ -73,23 +75,56 @@ class GameView(ctk.CTkFrame):
         self.btn_submit = ctk.CTkButton(self.input_frame, text="Zatwierdź", command=self.send_guess, height=40, fg_color="green", hover_color="darkgreen")
         self.btn_submit.pack(side="left")
 
+        self.lbl_feedback = ctk.CTkLabel(self.game_content, text="", font=("Arial", 18, "bold"))
+        self.lbl_feedback.pack(pady=10)
+
+    def start_new_round(self):
+        self.entry.configure(state="normal")
+        self.btn_submit.configure(state="normal")
+        self.entry.delete(0, 'end')
+        self.lbl_feedback.configure(text="")
+
+        self.history_text.configure(state="normal")
+        self.history_text.delete("0.0", "end")
+        self.history_text.configure(state="disabled")
+
+        self.stop_timer()
         self.start_timer()
 
     def send_guess(self, event=None):
         guess = self.entry.get()
         if not guess: return
 
-        self.controller.network_client.send(f"GUESS {guess}")
+        self.lbl_feedback.configure(text="")
+        
+        self.controller.network_client.send(f"GUESS:{guess}")
     
         self.history_text.configure(state="normal")
         self.history_text.insert("0.0", f"{guess}\n")
         self.history_text.configure(state="disabled")
 
         self.entry.delete(0, 'end')
-        self.entry.focus()
+        self.entry.focus() 
+
+    def show_guess_result(self, result):
+        if result == "WRONG":
+            self.lbl_feedback.configure(text="Złe hasło", text_color="red")
+        elif result == "CORRECT":
+            self.lbl_feedback.configure(text="Zgadłeś!", text_color="green")
+
+    def update_word(self, new_word):
+        self.label_word.configure(text=new_word)
+    
+    def update_ranking(self, formatted_ranking_text):
+        self.ranking_text.configure(state="normal")
+        self.ranking_text.delete("0.0", "end")
+        self.ranking_text.insert("0.0", formatted_ranking_text)
+        self.ranking_text.configure(state="disabled")
+    
+    def update_score(self, score):
+        self.lbl_score.configure(text=f"Twoje Punkty: {score}")
 
     def go_back(self):
-        print("Powrót do menu")
         self.stop_timer()
         self.controller.show_frame("MenuView")
 
@@ -106,31 +141,8 @@ class GameView(ctk.CTkFrame):
             self.lbl_timer.configure(text=f"Czas: {self.time_left}s", text_color="orange")
             self.time_left -= 1
             self.after(1000, self.update_timer)
-        elif self.time_left == 0:
+        elif self.time_left == 0 and self.timer_running:
             self.lbl_timer.configure(text="KONIEC CZASU!", text_color="red")
             self.timer_running = False
             self.entry.configure(state="disabled")
             self.btn_submit.configure(state="disabled")
-    
-    def start_new_round(self):
-        
-        self.entry.configure(state="normal")
-        self.btn_submit.configure(state="normal")
-        self.entry.delete(0, 'end')
-
-        self.history_text.configure(state="normal")
-        self.history_text.delete("0.0", "end")
-        self.history_text.configure(state="disabled")
-
-        self.stop_timer() 
-
-if __name__ == "__main__":
-    app = ctk.CTk()
-    window_size = os.getenv("WINDOW_SIZE", "1100x600")
-    app.geometry(window_size)
-    app.title("Koło Fortuny")
-    
-    game_view = GameView(parent=app, controller=app)
-    game_view.pack(fill="both", expand=True)
-    
-    app.mainloop()

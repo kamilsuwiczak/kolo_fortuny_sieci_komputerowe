@@ -4,6 +4,7 @@ from views.set_player_nick_view import NickSetPlayerView
 from views.set_host_nick_view import NickSetHostView
 from views.game_view import GameView
 from views.room_view import RoomView
+from views.end_round_view import EndRoundView
 from network_client import NetworkClient
 from dotenv import load_dotenv
 import os
@@ -15,7 +16,7 @@ class App(ctk.CTk):
         super().__init__()
         
         self.title("Klient Gry")
-        self.geometry(os.getenv("WINDOW_SIZE"))
+        self.geometry(os.getenv("WINDOW_SIZE", "1100x600"))
         
         self.is_host = False
         self.player_nick = None
@@ -29,7 +30,7 @@ class App(ctk.CTk):
 
         self.frames = {}
 
-        for F in (MenuView, NickSetPlayerView, NickSetHostView, GameView, RoomView):
+        for F in (MenuView, NickSetPlayerView, NickSetHostView, GameView, RoomView, EndRoundView):
             page_name = F.__name__
             frame = F(parent=self.container, controller=self)
             self.frames[page_name] = frame
@@ -38,7 +39,7 @@ class App(ctk.CTk):
         self.show_frame("MenuView")
         
         ip = os.getenv("SERVER_IP", "127.0.0.1")
-        port = int(os.getenv("SERVER_PORT"))
+        port = int(os.getenv("SERVER_PORT", "12345"))
         self.network_client = NetworkClient(ip, port, self.handle_server_message)
         self.network_client.connect()
 
@@ -55,7 +56,7 @@ class App(ctk.CTk):
                         self.frames["RoomView"].set_room_code(self.pending_room_code)
                 self.show_frame("RoomView")
 
-            raw_data = message.split(":")[1]
+            raw_data = message.split(":", 1)[1]
             players_list = [player.strip() for player in raw_data.split(",")]
             if "RoomView" in self.frames:
                 self.frames["RoomView"].update_players(players_list)
@@ -90,8 +91,52 @@ class App(ctk.CTk):
         elif message.startswith("NEW_ROUND"):
             if "GameView" in self.frames:
                 self.frames["GameView"].start_new_round()
+        
+        elif message == "END_ROUND":
+            self.show_frame("EndRoundView")
+            if "EndRoundView" in self.frames:
+                self.frames["EndRoundView"].start_countdown()
 
-        elif message.startswith("WORD:"):
+        elif message.startswith("RANKING:"):
+            raw_data = message.split(":", 1)[1]
+            ranking_entries = [r for r in raw_data.split(";") if r]
+            
+            formatted_lines = []
+            for idx, entry in enumerate(ranking_entries, 1):
+                nick, score = entry.split(":")
+                formatted_lines.append(f"{idx}. {nick} - {score}")
+                
+                if nick == self.player_nick:
+                    if "GameView" in self.frames:
+                        self.frames["GameView"].update_score(score)
+
+            formatted_ranking = "\n".join(formatted_lines)
+
+            if "GameView" in self.frames:
+                self.frames["GameView"].update_ranking(formatted_ranking)
+            
+            if "EndRoundView" in self.frames:
+                self.frames["EndRoundView"].update_ranking(formatted_ranking)
+
+        elif message.startswith("INCORRECT:"):
+            parts = message.split(";")
+            nick_part = parts[0]
+            guesser_nick = nick_part.split(":")[1]
+
+            if guesser_nick == self.player_nick:
+                if "GameView" in self.frames:
+                    self.frames["GameView"].show_guess_result("WRONG")
+        
+        elif message.startswith("CORRECT:"):
+            parts = message.split(";")
+            nick_part = parts[0]
+            winner_nick = nick_part.split(":")[1]
+
+            if winner_nick == self.player_nick:
+                if "GameView" in self.frames:
+                    self.frames["GameView"].show_guess_result("CORRECT")
+            
+        elif message.startswith("HASHPASS:"):
             word = message.split(":")[1]
             if "GameView" in self.frames:
                 self.frames["GameView"].update_word(word)
