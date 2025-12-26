@@ -6,3 +6,4 @@ build/
 .idea/
 client/__pycache__/
 client/views/__pycache__/
+game_server
