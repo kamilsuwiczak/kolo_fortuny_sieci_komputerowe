@@ -90,7 +90,7 @@ void Server::handle_new_connection(int listen_fd) {
     std::cout << "Nowe połączenie zaakceptowane. FD: " << client_fd << std::endl;
 }
 
-void Server::handle_client_data(size_t i) {
+bool Server::handle_client_data(size_t i) {
     int client_fd = m_fds[i].fd;
     char buffer[BUFFER_SIZE];
     
@@ -101,14 +101,51 @@ void Server::handle_client_data(size_t i) {
         cleanup_player(m_fd_to_player[client_fd]); 
         close(client_fd);
         m_fds.erase(m_fds.begin() + i); 
+        return true;
+
         
     } else {
         buffer[bytes_read] = '\0'; 
         std::cout << "Odebrano od FD " << client_fd << ": " << buffer << std::endl;
         process_command(m_fd_to_player[client_fd], buffer);
+        return false;
     }
 }
 
+bool Server::validate_nick(const std::string& nick) {
+    if (nick.empty()) {
+        return false;
+    }
+    if (nick.length() < 3 || nick.length() > 20) {
+        return false;
+    }
+    for (char c : nick) {
+        if (std::isspace(c)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+void Server::cleanup_player(Player* player) {
+    if (m_player_to_room.count(player)) {
+        Room* room = m_player_to_room[player];
+        room->removePlayer(player->getSockDes());
+        m_player_to_room.erase(player);
+        if (room->getPlayersList().empty()) {
+            int r_id = room->getRoomNumber();
+            std::cout << "Pokój " << r_id << " jest pusty. Usuwanie..." << std::endl;
+            
+            m_active_rooms.erase(r_id);
+            delete room; 
+        }
+    }
+    
+    m_fd_to_player.erase(player->getSockDes());
+    delete player;
+}
+
+//Tu sie zrobil mega sphagetti code XD trzeba mapowac komendy do osobnych metod
 void Server::process_command(Player* player, const std::string& command_line) {
     std::istringstream iss(command_line);
     std::string cmd;
@@ -118,18 +155,29 @@ void Server::process_command(Player* player, const std::string& command_line) {
         std::string room_id_str, nick;
         iss >> room_id_str >> nick;
 
-        if (room_id_str.empty() || nick.empty()) {
-            player->sendMessage("ERROR: Room ID i Nick są wymagane.");
+        if (m_player_to_room.count(player)) {
+            player->sendMessage("ERROR: Już jesteś w pokoju.");
             return;
         }
-    
-        if (nick.length() > 20) {
-            player->sendMessage("ERROR_INVALID_NICK: Nick jest za długi.");
-            return;
-        }
-        // Tu powinno się dodać więcej walidacji nicku
 
-        int r_id = std::stoi(room_id_str);
+        if (room_id_str.empty()) {
+            player->sendMessage("ERROR_INVALID_ROOM_ID: Nieprawidłowy identyfikator pokoju.");
+            return;
+        }
+
+        if (!validate_nick(nick)) {
+            player->sendMessage("ERROR_INVALID_NICK: Nieprawidłowy nick.");
+            return;
+        }
+
+        int r_id;
+        try {
+            r_id = std::stoi(room_id_str);
+        } catch (const std::exception& e) {
+            player->sendMessage("ERROR_INVALID_ROOM_ID: Nieprawidłowy identyfikator pokoju.");
+            return;
+        }
+
         auto it = m_active_rooms.find(r_id);
         
         if (it == m_active_rooms.end()) {
@@ -162,6 +210,14 @@ void Server::process_command(Player* player, const std::string& command_line) {
             return;
         }
 
+        std::string nick;
+        iss >> nick;
+        if (!validate_nick(nick)) {
+            player->sendMessage("ERROR_INVALID_NICK: Nieprawidłowy nick.");
+            return;
+        }
+        player->setNick(nick);
+
         static int next_room_number = 1; 
         
         Room* new_room = new Room(next_room_number, player, m_password_source);
@@ -177,6 +233,73 @@ void Server::process_command(Player* player, const std::string& command_line) {
             player->sendMessage("ERROR: Nie udało się stworzyć pokoju.");
         }
     }
+
+    if (cmd == "START_GAME") {
+        if (!m_player_to_room.count(player)) {
+            player->sendMessage("ERROR: Nie jesteś w pokoju.");
+            return;
+        }
+
+        Room* room = m_player_to_room[player];
+        if (room->getPlayersList().empty() || room->getPlayersList().front() != player) {
+            player->sendMessage("ERROR_NOT_HOST: Tylko gospodarz może rozpocząć grę.");
+            return;
+        }
+
+        std::string max_rounds_str;
+        iss >> max_rounds_str;
+        int max_rounds = 3; 
+        try {
+            max_rounds = std::stoi(max_rounds_str);
+            if (max_rounds <= 0 || max_rounds > 20) {
+                throw std::out_of_range("Invalid range");
+            }
+        } catch (const std::exception& e) {
+            player->sendMessage("ERROR_INVALID_ROUNDS: Nieprawidłowa liczba rund.");
+            return;
+        }
+
+        room->startGame(max_rounds);
+    }
+
 }
- 
+
+void Server::run() {
+
+    while (true) {
+
+        int poll_count = poll(m_fds.data(), m_fds.size(), -1);
+
+        if (poll_count < 0) {
+            if (errno == EINTR) continue;
+            std::cerr << "Błąd poll(): " << strerror(errno) << std::endl;
+            break;
+        }
+
+        for (size_t i = 0; i < m_fds.size(); ++i) {
+            
+            if (m_fds[i].revents & POLLIN) {
+                
+                if (m_fds[i].fd == m_listen_fd) {
+                    handle_new_connection(m_listen_fd);
+                } 
+
+                else {
+                    bool removed = handle_client_data(i);
+                    if (removed) {
+                        --i; 
+                    }
+                }
+            }
+            
+            else if (m_fds[i].revents & (POLLERR | POLLHUP)) {
+                std::cout << "Błąd lub rozłączenie na FD: " << m_fds[i].fd << std::endl;
+                cleanup_player(m_fd_to_player[m_fds[i].fd]);
+                close(m_fds[i].fd);
+                m_fds.erase(m_fds.begin() + i);
+                --i;
+            }
+        }
+    }
+}
 

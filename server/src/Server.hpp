@@ -8,7 +8,6 @@
 #include <string>
 #include <sys/socket.h>
 
-
 class Player; 
 class Room; 
 
@@ -32,9 +31,11 @@ private:
 
     void handle_new_connection(int listen_fd);
 
-    void handle_client_data(size_t i);
+    bool handle_client_data(size_t i);
     
     void process_command(Player* player, const std::string& command_line);
+
+    bool validate_nick(const std::string& nick);
 
 public:
     Server(int port = DEFAULT_PORT);
