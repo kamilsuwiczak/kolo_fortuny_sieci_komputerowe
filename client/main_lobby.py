@@ -74,13 +74,13 @@ class App(ctk.CTk):
             if "RoomView" in self.frames:
                 self.frames["RoomView"].set_room_code(code)
 
-        elif message == "ERROR_NICK_TAKEN":
+        elif message.startswith("ERROR_NICK_TAKEN:"):
             if self.current_page in self.frames:
                 frame = self.frames[self.current_page]
                 if hasattr(frame, "show_error"):
                     frame.show_error("Nick jest zajęty! Wybierz inny.")
 
-        elif message == "ERROR_WRONG_ROOM_CODE":
+        elif message.startswith("ERROR_WRONG_ROOM_CODE:"):
             if "NickSetPlayerView" in self.frames:
                 self.frames["NickSetPlayerView"].show_error("Pokój o takim kodzie nie istnieje!")
 
@@ -93,30 +93,30 @@ class App(ctk.CTk):
             if "RoomView" in self.frames:
                 self.frames["RoomView"].refresh_view()
 
-        elif message == "START_GAME":
-            self.show_frame("GameView")
-        
         elif message.startswith("NEW_ROUND"):
             if "GameView" in self.frames:
+                self.show_frame("GameView")
                 self.frames["GameView"].start_new_round()
         
-        elif message == "END_ROUND":
+        elif message == "ROUND_OVER":
             self.show_frame("EndRoundView")
             if "EndRoundView" in self.frames:
                 self.frames["EndRoundView"].start_countdown()
 
-        elif message.startswith("RANKING:"):
+        elif message.startswith("LEADERBOARD:"):
+        
             raw_data = message.split(":", 1)[1]
             ranking_entries = [r for r in raw_data.split(";") if r]
             
             formatted_lines = []
             for idx, entry in enumerate(ranking_entries, 1):
-                nick, score = entry.split(":")
-                formatted_lines.append(f"{idx}. {nick} - {score}")
-                
-                if nick == self.player_nick:
-                    if "GameView" in self.frames:
-                        self.frames["GameView"].update_score(score)
+                if "," in entry:
+                    nick, score = entry.split(",") 
+                    formatted_lines.append(f"{idx}. {nick} - {score}")
+                    
+                    if nick == self.player_nick:
+                        if "GameView" in self.frames:
+                            self.frames["GameView"].update_score(score)
 
             formatted_ranking = "\n".join(formatted_lines)
 
@@ -143,6 +143,9 @@ class App(ctk.CTk):
             if winner_nick == self.player_nick:
                 if "GameView" in self.frames:
                     self.frames["GameView"].show_guess_result("CORRECT")
+            self.show_frame("EndRoundView")
+            if "EndRoundView" in self.frames:
+                self.frames["EndRoundView"].start_countdown()
             
         elif message.startswith("HASHPASS:"):
             word = message.split(":")[1]

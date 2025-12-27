@@ -1,6 +1,5 @@
 import customtkinter as ctk
 from dotenv import load_dotenv
-import os
 
 load_dotenv()
 
@@ -97,7 +96,7 @@ class GameView(ctk.CTkFrame):
 
         self.lbl_feedback.configure(text="")
         
-        self.controller.network_client.send(f"GUESS:{guess}")
+        self.controller.network_client.send(f"GUESS {guess.upper()}")
     
         self.history_text.configure(state="normal")
         self.history_text.insert("0.0", f"{guess}\n")
