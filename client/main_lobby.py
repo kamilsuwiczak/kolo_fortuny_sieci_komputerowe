@@ -44,7 +44,10 @@ class App(ctk.CTk):
         self.network_client.connect()
 
     def handle_server_message(self, message):
-        self.after(0, lambda: self._process_message(message))
+        parts = message.split('\n')
+        for part in parts:
+            if part.strip():
+                self.after(0, lambda m=part: self._process_message(m))
     
     def _process_message(self, message):
         message = message.strip()
@@ -61,7 +64,12 @@ class App(ctk.CTk):
             if "RoomView" in self.frames:
                 self.frames["RoomView"].update_players(players_list)
 
-        elif message.startswith("ROOM_CODE:"):
+        elif message.startswith("ROOM_CREATED:"):
+            code = message.split(":")[1]
+            if "RoomView" in self.frames:
+                self.frames["RoomView"].set_room_code(code)
+        
+        elif message.startswith("JOIN_SUCCESS:"):
             code = message.split(":")[1]
             if "RoomView" in self.frames:
                 self.frames["RoomView"].set_room_code(code)

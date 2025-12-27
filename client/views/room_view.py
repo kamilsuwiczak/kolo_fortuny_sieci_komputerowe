@@ -46,7 +46,7 @@ class RoomView(ctk.CTkFrame):
         self.controller.show_frame("MenuView")
 
     def start_game(self):
-        self.controller.network_client.send("START_GAME")
+        self.controller.network_client.send("START_GAME 3")
 
     def update_players(self, players):
         self.players_list.configure(state="normal")
@@ -54,15 +54,3 @@ class RoomView(ctk.CTkFrame):
         for i, player in enumerate(players):
             self.players_list.insert("end", f"{i+1}. {player}\n")
         self.players_list.configure(state="disabled")
-
-if __name__ == "__main__":
-    app = ctk.CTk()
-    app.geometry(os.getenv("WINDOW_SIZE", "1000x600"))
-    app.is_host = True
-    players = ["player1", "player2", "player3"]
-    room_view = RoomView(parent=app, controller=app)
-    room_view.pack(fill="both", expand=True)
-    room_view.refresh_view()
-    room_view.update_players(players)
-    room_view.set_room_code("TEST")
-    app.mainloop()
