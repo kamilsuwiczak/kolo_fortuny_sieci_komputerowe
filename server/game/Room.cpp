@@ -166,13 +166,13 @@ void Room::gameLoop() {
 
         if (m_game_state == IN_PROGRESS) {
             if (m_round_over) {
-                broadcast("INFO: Hasło odgadnięte! Przerwa 3s.");
+                broadcast("INFO: Hasło odgadnięte! Przerwa 5s.");
             } else {
                 broadcast("ROUND_OVER: Nikt nie zgadł. Hasło to: " + m_password);
             }
             
             lock.unlock();
-            std::this_thread::sleep_for(std::chrono::seconds(3));
+            std::this_thread::sleep_for(std::chrono::seconds(5));
             lock.lock();
         }
     }
