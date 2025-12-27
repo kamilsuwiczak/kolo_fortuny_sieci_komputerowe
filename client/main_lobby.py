@@ -109,8 +109,11 @@ class App(ctk.CTk):
                 self.frames["GameView"].start_timeout_countdown()
         
         elif message.startswith("ROUND_OVER"):
+            correct_word = message.split(":", 1)[1]
+            info_text = f"Nikt nie zgadł! Hasło to: {correct_word}"
             self.show_frame("EndRoundView")
             if "EndRoundView" in self.frames:
+                self.frames["EndRoundView"].display_round_result(info_text, "red")
                 self.frames["EndRoundView"].start_countdown()
 
         elif message.startswith("GAME_OVER"):
@@ -154,14 +157,25 @@ class App(ctk.CTk):
         
         elif message.startswith("CORRECT:"):
             parts = message.split(";")
-            nick_part = parts[0]
-            winner_nick = nick_part.split(":")[1]
+            
+            winner_part = parts[0]
+            winner_nick = winner_part.split(":")[1]
+
+            guessed_word = ""
+            if len(parts) > 1 and "GUESS:" in parts[1]:
+                guessed_word = parts[1].split(":")[1]
 
             if winner_nick == self.player_nick:
                 if "GameView" in self.frames:
                     self.frames["GameView"].show_guess_result("CORRECT")
+            
+            if "GameView" in self.frames:
+                self.frames["GameView"].stop_timer()
+
             self.show_frame("EndRoundView")
             if "EndRoundView" in self.frames:
+                info_text = f"{winner_nick} zgadł hasło: {guessed_word}"
+                self.frames["EndRoundView"].display_round_result(info_text, "green")
                 self.frames["EndRoundView"].start_countdown()
             
         elif message.startswith("HASHPASS:"):

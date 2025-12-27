@@ -8,6 +8,9 @@ class EndRoundView(ctk.CTkFrame):
         self.label_title = ctk.CTkLabel(self, text="Koniec Rundy!", font=("Arial", 30, "bold"), text_color="orange")
         self.label_title.pack(pady=(40, 20))
 
+        self.label_result = ctk.CTkLabel(self, text="", font=("Arial", 22, "bold"))
+        self.label_result.pack(pady=(0, 20))
+
         self.ranking_label = ctk.CTkLabel(self, text="Ranking po tej rundzie:", font=("Arial", 20))
         self.ranking_label.pack(pady=10)
 
@@ -26,6 +29,9 @@ class EndRoundView(ctk.CTkFrame):
         self.ranking_text.delete("0.0", "end")
         self.ranking_text.insert("0.0", formatted_ranking_text)
         self.ranking_text.configure(state="disabled")
+
+    def display_round_result(self, text, color="white"):
+        self.label_result.configure(text=text, text_color=color)
 
     def start_countdown(self):
         self.time_left = 5
