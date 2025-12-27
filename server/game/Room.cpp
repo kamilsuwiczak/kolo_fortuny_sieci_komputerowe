@@ -168,7 +168,7 @@ void Room::gameLoop() {
             if (m_round_over) {
                 broadcast("INFO: Hasło odgadnięte! Przerwa 5s.");
             } else {
-                broadcast("ROUND_OVER: Nikt nie zgadł. Hasło to: " + m_password);
+                broadcast("ROUND_OVER:" + m_password);
             }
             
             lock.unlock();
