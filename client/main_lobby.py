@@ -85,7 +85,7 @@ class App(ctk.CTk):
                 if hasattr(frame, "show_error"):
                     frame.show_error("Nick jest zajęty! Wybierz inny.")
 
-        elif message.startswith("ERROR_WRONG_ROOM_CODE:"):
+        elif message.startswith("ERROR_ROOM_NOT_FOUND:"):
             if "NickSetPlayerView" in self.frames:
                 self.frames["NickSetPlayerView"].show_error("Pokój o takim kodzie nie istnieje!")
 
@@ -103,7 +103,11 @@ class App(ctk.CTk):
                 self.show_frame("GameView")
                 self.frames["GameView"].start_new_round()
         
-        elif message == "ROUND_OVER":
+        elif message.startswith("TIMEOUT"):
+            if "GameView" in self.frames:
+                self.frames["GameView"].start_timeout_countdown()
+        
+        elif message.startswith("ROUND_OVER"):
             self.show_frame("EndRoundView")
             if "EndRoundView" in self.frames:
                 self.frames["EndRoundView"].start_countdown()

@@ -54,10 +54,10 @@ class GameView(ctk.CTkFrame):
         self.lbl_code = ctk.CTkLabel(self.score_frame, text="Kod pokoju: ---", font=("Arial", 16, "bold"))
         self.lbl_code.pack(anchor="e")
 
-        self.lbl_timer = ctk.CTkLabel(self.score_frame, text="Czas: 60s", font=("Arial", 20, "bold"), text_color="orange")
+        self.lbl_timer = ctk.CTkLabel(self.score_frame, text="", font=("Arial", 20, "bold"), text_color="orange")
         self.lbl_timer.pack(anchor="e", pady=(5, 0))
 
-        self.time_left = 60
+        self.time_left = 10
         self.timer_running = False
 
         self.game_content = ctk.CTkFrame(self.center_frame, fg_color="transparent")
@@ -95,7 +95,12 @@ class GameView(ctk.CTkFrame):
         self.history_text.configure(state="disabled")
 
         self.stop_timer()
-        self.start_timer()
+        self.lbl_timer.configure(text="")
+
+    def start_timeout_countdown(self):
+        self.time_left = 10
+        self.timer_running = True
+        self.update_timer()
 
     def send_guess(self, event=None):
         guess = self.entry.get()
@@ -138,11 +143,6 @@ class GameView(ctk.CTkFrame):
     def go_back(self):
         self.stop_timer()
         self.controller.show_frame("MenuView")
-
-    def start_timer(self):
-        self.time_left = 60
-        self.timer_running = True
-        self.update_timer()
 
     def stop_timer(self):
         self.timer_running = False
