@@ -5,6 +5,7 @@ from views.set_host_nick_view import NickSetHostView
 from views.game_view import GameView
 from views.room_view import RoomView
 from views.end_round_view import EndRoundView
+from views.end_game_view import EndGameView
 from network_client import NetworkClient
 from dotenv import load_dotenv
 import os
@@ -30,7 +31,7 @@ class App(ctk.CTk):
 
         self.frames = {}
 
-        for F in (MenuView, NickSetPlayerView, NickSetHostView, GameView, RoomView, EndRoundView):
+        for F in (MenuView, NickSetPlayerView, NickSetHostView, GameView, RoomView, EndRoundView, EndGameView):
             page_name = F.__name__
             frame = F(parent=self.container, controller=self)
             self.frames[page_name] = frame
@@ -112,6 +113,11 @@ class App(ctk.CTk):
             if "EndRoundView" in self.frames:
                 self.frames["EndRoundView"].start_countdown()
 
+        elif message.startswith("GAME_OVER"):
+            if "EndRoundView" in self.frames:
+                self.frames["EndRoundView"].stop_timer()
+            self.show_frame("EndGameView")
+
         elif message.startswith("LEADERBOARD:"):
             raw_data = message.split(":", 1)[1]
             ranking_entries = [r for r in raw_data.split(";") if r]
@@ -133,6 +139,9 @@ class App(ctk.CTk):
             
             if "EndRoundView" in self.frames:
                 self.frames["EndRoundView"].update_ranking(formatted_ranking)
+            
+            if "EndGameView" in self.frames:
+                self.frames["EndGameView"].update_final_ranking(formatted_ranking)
 
         elif message.startswith("INCORRECT:"):
             parts = message.split(";")

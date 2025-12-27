@@ -32,11 +32,21 @@ class EndRoundView(ctk.CTkFrame):
         self.timer_running = True
         self.update_timer()
 
+    def stop_timer(self):
+        """Metoda do natychmiastowego przerwania odliczania."""
+        self.timer_running = False
+        self.label_timer.configure(text="")
+
     def update_timer(self):
-        if self.timer_running and self.time_left > 0:
+        # Jeśli timer został zatrzymany (timer_running == False), przerywamy pętlę
+        if not self.timer_running:
+            return
+
+        if self.time_left > 0:
             self.label_timer.configure(text=f"Następna runda za: {self.time_left}s")
             self.time_left -= 1
             self.after(1000, self.update_timer)
-        elif self.time_left == 0 and self.timer_running:
+        else:
+            # Timer dobił do zera I NADAL jest włączony
             self.timer_running = False
             self.controller.show_frame("GameView")
