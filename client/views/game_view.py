@@ -1,4 +1,5 @@
 import customtkinter as ctk
+from tkinter import messagebox
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -141,8 +142,11 @@ class GameView(ctk.CTkFrame):
         self.lbl_score.configure(text=f"Twoje Punkty: {score}")
 
     def go_back(self):
-        self.stop_timer()
-        self.controller.show_frame("MenuView")
+        answer = messagebox.askyesno("Wyjście", "Czy na pewno chcesz wyjść do menu? Utracisz postęp w grze.")
+        if answer:
+            self.stop_timer()
+            self.controller.network_client.send("LEAVE_ROOM")
+            self.controller.show_frame("MenuView")
 
     def stop_timer(self):
         self.timer_running = False

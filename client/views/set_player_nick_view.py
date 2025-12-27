@@ -32,8 +32,15 @@ class NickSetPlayerView(ctk.CTkFrame):
         self.btn_confirm = ctk.CTkButton(self, text="Potwierdź", width=200, height=40, command=self.confirm_nick)
         self.btn_confirm.pack(pady=10)
 
+        self.btn_back = ctk.CTkButton(self, text="Wróć do menu", command=self.go_back, fg_color="red", hover_color="darkred")
+        self.btn_back.place(relx=0.02, rely=0.98, anchor="sw")
+
     def show_error(self, message):
         self.label_error.configure(text=message)
+
+    def go_back(self):
+        self.show_error("")
+        self.controller.show_frame("MenuView")
 
     def confirm_nick(self):
         nick = self.entry_nick.get()
