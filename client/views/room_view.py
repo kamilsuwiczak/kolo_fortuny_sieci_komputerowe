@@ -9,8 +9,14 @@ class RoomView(ctk.CTkFrame):
         super().__init__(parent)
         self.controller = controller
 
-        self.label_code = ctk.CTkLabel(self, text="KOD: ----", font=("Arial", 20, "bold"), text_color="orange")
-        self.label_code.place(relx=0.95, rely=0.05, anchor="ne")
+        self.info_frame = ctk.CTkFrame(self, fg_color="transparent")
+        self.info_frame.place(relx=0.95, rely=0.05, anchor="ne")
+
+        self.label_nick = ctk.CTkLabel(self.info_frame, text="NICK: ---", font=("Arial", 16, "bold"))
+        self.label_nick.pack(anchor="e")
+
+        self.label_code = ctk.CTkLabel(self.info_frame, text="KOD: ----", font=("Arial", 20, "bold"), text_color="orange")
+        self.label_code.pack(anchor="e")
 
         self.btn_back = ctk.CTkButton(self, text="Wyjdź do menu", command=self.confirm_exit, fg_color="red", hover_color="darkred")
         self.btn_back.place(relx=0.02, rely=0.98, anchor="sw")
@@ -33,8 +39,9 @@ class RoomView(ctk.CTkFrame):
         else:
             self.btn_start.pack_forget()
 
-    def set_room_code(self, code):
+    def update_room_info(self, code, nick):
         self.label_code.configure(text=f"KOD: {code}")
+        self.label_nick.configure(text=f"Gracz: {nick}")
 
     def confirm_exit(self):
         answer = messagebox.askyesno("Wyjście", "Czy na pewno chcesz opuścić lobby?")

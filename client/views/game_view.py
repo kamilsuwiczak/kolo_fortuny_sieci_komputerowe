@@ -45,10 +45,13 @@ class GameView(ctk.CTkFrame):
         self.score_frame = ctk.CTkFrame(self.center_frame, fg_color="transparent")
         self.score_frame.place(relx=0.98, rely=0.02, anchor="ne")
         
+        self.lbl_nick = ctk.CTkLabel(self.score_frame, text="Gracz: ---", font=("Arial", 16, "bold"))
+        self.lbl_nick.pack(anchor="e")
+
         self.lbl_score = ctk.CTkLabel(self.score_frame, text="Twoje Punkty: 0", font=("Arial", 20, "bold"))
         self.lbl_score.pack(anchor="e")
 
-        self.lbl_code = ctk.CTkLabel(self.score_frame, text="Kod pokoju: ---", font=("Arial", 20, "bold"))
+        self.lbl_code = ctk.CTkLabel(self.score_frame, text="Kod pokoju: ---", font=("Arial", 16, "bold"))
         self.lbl_code.pack(anchor="e")
 
         self.lbl_timer = ctk.CTkLabel(self.score_frame, text="Czas: 60s", font=("Arial", 20, "bold"), text_color="orange")
@@ -76,6 +79,10 @@ class GameView(ctk.CTkFrame):
 
         self.lbl_feedback = ctk.CTkLabel(self.game_content, text="", font=("Arial", 18, "bold"))
         self.lbl_feedback.pack(pady=10)
+
+    def update_room_info(self, code, nick):
+        self.lbl_code.configure(text=f"Kod pokoju: {code}")
+        self.lbl_nick.configure(text=f"Gracz: {nick}")
 
     def start_new_round(self):
         self.entry.configure(state="normal")
@@ -112,7 +119,12 @@ class GameView(ctk.CTkFrame):
             self.lbl_feedback.configure(text="Zgadłeś!", text_color="green")
 
     def update_word(self, new_word):
-        self.label_word.configure(text=new_word)
+        word=""
+        for i in range(len(new_word)):
+            word+=new_word[i]+" "
+            if i>=len(new_word)-1:
+                break
+        self.label_word.configure(text=word)
     
     def update_ranking(self, formatted_ranking_text):
         self.ranking_text.configure(state="normal")

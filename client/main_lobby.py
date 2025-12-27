@@ -56,7 +56,8 @@ class App(ctk.CTk):
             if self.current_page in ["NickSetPlayerView", "NickSetHostView"]:
                 if self.current_page == "NickSetPlayerView" and self.pending_room_code:
                     if "RoomView" in self.frames:
-                        self.frames["RoomView"].set_room_code(self.pending_room_code)
+                        self.frames["RoomView"].update_room_info(self.pending_room_code, self.player_nick)
+                        self.frames["GameView"].update_room_info(self.pending_room_code, self.player_nick)
                 self.show_frame("RoomView")
 
             raw_data = message.split(":", 1)[1]
@@ -67,12 +68,16 @@ class App(ctk.CTk):
         elif message.startswith("ROOM_CREATED:"):
             code = message.split(":")[1]
             if "RoomView" in self.frames:
-                self.frames["RoomView"].set_room_code(code)
+                self.frames["RoomView"].update_room_info(code, self.player_nick)
+            if "GameView" in self.frames:
+                self.frames["GameView"].update_room_info(code, self.player_nick)
         
         elif message.startswith("JOIN_SUCCESS:"):
             code = message.split(":")[1]
             if "RoomView" in self.frames:
-                self.frames["RoomView"].set_room_code(code)
+                self.frames["RoomView"].update_room_info(code, self.player_nick)
+            if "GameView" in self.frames:
+                self.frames["GameView"].update_room_info(code, self.player_nick)
 
         elif message.startswith("ERROR_NICK_TAKEN:"):
             if self.current_page in self.frames:
@@ -104,7 +109,6 @@ class App(ctk.CTk):
                 self.frames["EndRoundView"].start_countdown()
 
         elif message.startswith("LEADERBOARD:"):
-        
             raw_data = message.split(":", 1)[1]
             ranking_entries = [r for r in raw_data.split(";") if r]
             
