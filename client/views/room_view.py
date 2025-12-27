@@ -31,12 +31,23 @@ class RoomView(ctk.CTkFrame):
         self.players_list.pack(pady=10)
         self.players_list.configure(state="disabled") 
 
+        self.rounds_frame = ctk.CTkFrame(self, fg_color="transparent")
+        
+        self.label_rounds = ctk.CTkLabel(self.rounds_frame, text="Liczba rund:", font=("Arial", 16))
+        self.label_rounds.pack(side="left", padx=10)
+
+        self.rounds_var = ctk.StringVar(value="3")
+        self.rounds_option = ctk.CTkOptionMenu(self.rounds_frame, values=["2", "3", "4", "5", "6", "7", "8", "9"], variable=self.rounds_var)
+        self.rounds_option.pack(side="left")
+
         self.btn_start = ctk.CTkButton(self, text="Rozpocznij grę", command=self.start_game, fg_color="green")
 
     def refresh_view(self):
         if self.controller.is_host:
+            self.rounds_frame.pack(pady=5)
             self.btn_start.pack(pady=20)
         else:
+            self.rounds_frame.pack_forget()
             self.btn_start.pack_forget()
 
     def update_room_info(self, code, nick):
@@ -53,7 +64,8 @@ class RoomView(ctk.CTkFrame):
         self.controller.show_frame("MenuView")
 
     def start_game(self):
-        self.controller.network_client.send("START_GAME 3")
+        rounds = self.rounds_var.get()
+        self.controller.network_client.send(f"START_GAME {rounds}")
 
     def update_players(self, players):
         self.players_list.configure(state="normal")
