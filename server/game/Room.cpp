@@ -127,7 +127,7 @@ void Room::sendLeaderboard() {
 
     std::string leaderboard = "LEADERBOARD:";
     for (const auto& player : sorted_players) {
-        leaderboard += player->getNick() + ":" + std::to_string(player->getPoints()) + ";";
+        leaderboard += player->getNick() + "," + std::to_string(player->getPoints()) + ";";
     }
     
     if (!leaderboard.empty()) {
@@ -220,7 +220,7 @@ void Room::broadcast_players_list() {
         if (!players_msg.empty()) {
             players_msg.pop_back();
         }
-    broadcast("PLAYERS:" + players_msg);
+    broadcast(players_msg);
 }
 
 bool Room::addPlayer(Player* player) {
