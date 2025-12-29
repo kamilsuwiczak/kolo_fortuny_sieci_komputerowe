@@ -42,6 +42,7 @@ private:
     void gameLoop(); 
     void finishGame();
     void sendLeaderboard();
+    void broadcast_players_list();
 
     public:
     

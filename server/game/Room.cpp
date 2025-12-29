@@ -117,13 +117,23 @@ void Room::broadcast(const std::string& message) {
 
 void Room::sendLeaderboard() {
     std::lock_guard<std::mutex> lock(m_mutex);
+    
+    if (m_players_list.empty()) return;
+    std::vector<Player*> sorted_players = m_players_list;
+
+    std::sort(sorted_players.begin(), sorted_players.end(), [](Player* a, Player* b) {
+        return a->getPoints() > b->getPoints();
+    });
+
     std::string leaderboard = "LEADERBOARD:";
-    for (const auto& player : m_players_list) {
-        leaderboard += player->getNick() + "," + std::to_string(player->getPoints()) + ";";
+    for (const auto& player : sorted_players) {
+        leaderboard += player->getNick() + ":" + std::to_string(player->getPoints()) + ";";
     }
+    
     if (!leaderboard.empty()) {
         leaderboard.pop_back(); 
     }
+
     broadcast(leaderboard);
 }
 
@@ -138,7 +148,6 @@ void Room::gameLoop() {
         }
 
         startNewRound();
-        sendLeaderboard();
         std::unique_lock<std::mutex> lock(m_mutex); 
         while (m_game_state == IN_PROGRESS) { 
             if (m_unrevealed_indices.size() <= m_password.length() * 0.5 || m_round_over) {
@@ -167,11 +176,15 @@ void Room::gameLoop() {
         if (m_game_state == IN_PROGRESS) {
             if (m_round_over) {
                 broadcast("INFO: Hasło odgadnięte! Przerwa 5s.");
+                
             } else {
                 broadcast("ROUND_OVER:" + m_password);
             }
+
+            
             
             lock.unlock();
+            sendLeaderboard();
             std::this_thread::sleep_for(std::chrono::seconds(5));
             lock.lock();
         }
@@ -179,7 +192,7 @@ void Room::gameLoop() {
 
     if (m_game_state != FINISHED) { 
         finishGame();
-        sendLeaderboard();
+        
     }
 }
 
@@ -196,6 +209,18 @@ bool Room::validateNick(const std::string& nick) {
         }
     }
     return true;
+}
+
+void Room::broadcast_players_list() {
+    std::string players_msg = "PLAYERS:";
+    std::vector<Player*> current_players = getPlayersList();
+    for (auto p : current_players) {
+            players_msg += p->getNick() + ",";
+        }
+        if (!players_msg.empty()) {
+            players_msg.pop_back();
+        }
+    broadcast("PLAYERS:" + players_msg);
 }
 
 bool Room::addPlayer(Player* player) {
@@ -217,10 +242,13 @@ bool Room::addPlayer(Player* player) {
     }
 
     if (!player) return false;
-    broadcast("PLAYER_JOINED:" + player->getNick());
     m_players_list.push_back(player);
+    broadcast_players_list();
+
     return true;
 }
+
+
 
 Player* Room::removePlayer(int sockDes) {
     std::lock_guard<std::mutex> lock(m_mutex);
@@ -236,7 +264,7 @@ Player* Room::removePlayer(int sockDes) {
         
     if (removed_player) {
         m_players_list.erase(it, m_players_list.end());
-        broadcast("PLAYER_LEFT:" + removed_player->getNick());
+        broadcast_players_list();
         if (removed_player == m_host) {
             if (!m_players_list.empty()) {
                 m_host = m_players_list.front(); 

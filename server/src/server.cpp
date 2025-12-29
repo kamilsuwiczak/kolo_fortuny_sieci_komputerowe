@@ -188,16 +188,7 @@ void Server::handle_join_room(Player* player, std::istringstream& iss) {
     
     if (room->addPlayer(player)) {
         m_player_to_room[player] = room;
-        player->sendMessage("JOIN_SUCCESS:" + std::to_string(r_id));
-        std::string players_msg = "PLAYERS:";
-        std::vector<Player*> current_players = room->getPlayersList();
-        for (auto p : current_players) {
-            players_msg += p->getNick() + ",";
-        }
-        if (!players_msg.empty()) {
-            players_msg.pop_back();
-        }
-        player->sendMessage(players_msg);
+        
     }
 }
 
