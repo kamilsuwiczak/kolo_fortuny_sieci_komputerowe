@@ -39,8 +39,8 @@ class App(ctk.CTk):
 
         self.show_frame("MenuView")
         
-        ip = os.getenv("SERVER_IP", "127.0.0.1")
-        port = int(os.getenv("SERVER_PORT", "12345"))
+        ip = os.getenv("SERVER_IP", "34.51.208.237")
+        port = int(os.getenv("SERVER_PORT", "8080"))
         self.network_client = NetworkClient(ip, port, self.handle_server_message)
         self.network_client.connect()
 

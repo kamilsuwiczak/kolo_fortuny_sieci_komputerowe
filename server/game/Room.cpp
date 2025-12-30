@@ -232,7 +232,7 @@ bool Room::addPlayer(Player* player) {
         return false; 
     }
 
-    if(m_game_state != WAITING) {
+    if(m_game_state == IN_PROGRESS) {
         player->sendMessage("ERROR_GAME_STARTED: Gra już się rozpoczęła. Nie można dołączyć do pokoju.");
         return false; 
     }
