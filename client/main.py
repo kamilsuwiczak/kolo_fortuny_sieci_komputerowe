@@ -9,6 +9,7 @@ from views.end_game_view import EndGameView
 from network_client import NetworkClient
 from dotenv import load_dotenv
 import os
+import sys
 
 load_dotenv()
 
@@ -43,6 +44,9 @@ class App(ctk.CTk):
         port = int(os.getenv("SERVER_PORT", "8080"))
         self.network_client = NetworkClient(ip, port, self.handle_server_message)
         self.network_client.connect()
+        if not self.network_client.connect():
+            print("Nie można połączyć się z serwerem.")
+            sys.exit(1)
 
     def handle_server_message(self, message):
         parts = message.split('\n')
