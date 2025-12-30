@@ -104,8 +104,14 @@ class App(ctk.CTk):
                 self.frames["RoomView"].refresh_view()
 
         elif message.startswith("NEW_ROUND"):
+            round_number = message.split(":")[1].strip()
+            
             if "GameView" in self.frames:
                 self.show_frame("GameView")
+                
+                if round_number == "1":
+                    self.frames["GameView"].reset_ranking()
+                
                 self.frames["GameView"].start_new_round()
         
         elif message.startswith("TIMEOUT"):

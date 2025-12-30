@@ -84,6 +84,13 @@ class GameView(ctk.CTkFrame):
     def update_room_info(self, code, nick):
         self.lbl_code.configure(text=f"Kod pokoju: {code}")
         self.lbl_nick.configure(text=f"Gracz: {nick}")
+    
+    def reset_ranking(self):
+        self.update_score(0)
+        
+        self.ranking_text.configure(state="normal")
+        self.ranking_text.delete("0.0", "end")
+        self.ranking_text.configure(state="disabled")
 
     def start_new_round(self):
         self.entry.configure(state="normal")
