@@ -25,7 +25,7 @@ private:
     
     std::map<int, Room*> m_active_rooms; 
     
-    const std::vector<std::string> m_password_source = {"CAT", "DUCK", "HORSE", "SERVER"};
+    const std::vector<std::string> m_password_source = {"CAT", "DUCK", "HORSE", "SERVER", "COMPUTER", "KEYBOARD", "MOUSE", "MONITOR", "PRINTER", "LAPTOP", "DOG", "BIRD", "FISH", "ELEPHANT", "TIGER", "LION", "BEAR", "WOLF", "FOX", "SNAKE", "CROCODILE", "GIRAFFE", "ZEBRA", "KANGAROO", "PENGUIN", "DOLPHIN", "SHARK", "WHALE", "OCTOPUS", "CRAB", "LOBSTER"};
 
     void setup_listening_socket(int port);
 
