@@ -44,7 +44,6 @@ class EndRoundView(ctk.CTkFrame):
         self.label_timer.configure(text="")
 
     def update_timer(self):
-        # Jeśli timer został zatrzymany (timer_running == False), przerywamy pętlę
         if not self.timer_running:
             return
 
@@ -53,6 +52,5 @@ class EndRoundView(ctk.CTkFrame):
             self.time_left -= 1
             self.after(1000, self.update_timer)
         else:
-            # Timer dobił do zera I NADAL jest włączony
             self.timer_running = False
             self.controller.show_frame("GameView")

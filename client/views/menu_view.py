@@ -1,7 +1,4 @@
 import customtkinter as ctk
-from dotenv import load_dotenv
-import os
-load_dotenv()
 
 class MenuView(ctk.CTkFrame):
     def __init__(self, parent, controller):
@@ -30,10 +27,3 @@ class MenuView(ctk.CTkFrame):
     def go_to_nick_host(self):
         print("Przełączam na widok hosta")
         self.controller.show_frame("NickSetHostView")
-
-if __name__ == "__main__":
-    app = ctk.CTk()
-    app.geometry(os.getenv("WINDOW_SIZE", "1000x600"))
-    menu_view = MenuView(parent=app, controller=app)
-    menu_view.pack(fill="both", expand=True)
-    app.mainloop()

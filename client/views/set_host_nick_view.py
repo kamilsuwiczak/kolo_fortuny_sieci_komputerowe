@@ -17,6 +17,8 @@ class NickSetHostView(ctk.CTkFrame):
         self.btn_confirm = ctk.CTkButton(self, text="Potwierdź", command=self.confirm_nick)
         self.btn_confirm.pack(pady=10)
 
+        self.entry_nick.bind('<Return>', lambda event: self.confirm_nick())
+
         self.btn_back = ctk.CTkButton(self, text="Wróć do menu", command=self.go_back, fg_color="red", hover_color="darkred")
         self.btn_back.place(relx=0.02, rely=0.98, anchor="sw")
 

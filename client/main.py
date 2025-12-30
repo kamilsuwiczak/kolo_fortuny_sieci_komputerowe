@@ -17,7 +17,7 @@ class App(ctk.CTk):
         super().__init__()
         
         self.title("Klient Gry")
-        self.geometry(os.getenv("WINDOW_SIZE", "1100x600"))
+        self.geometry("1200x700")
         
         self.is_host = False
         self.player_nick = None

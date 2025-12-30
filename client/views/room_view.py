@@ -1,8 +1,5 @@
 import customtkinter as ctk
 from tkinter import messagebox
-from dotenv import load_dotenv
-import os
-load_dotenv()
 
 class RoomView(ctk.CTkFrame):
     def __init__(self, parent, controller):
