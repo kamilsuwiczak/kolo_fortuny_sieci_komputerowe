@@ -21,3 +21,24 @@ W przypadku, gdy dwóch graczy odgadnie hasło wygrywa ten, który będzie pierw
 Za każde odgadnięte hasło określony gracz dostaje punkt.
 Na końcu gry pokazuje się ranking, kto ile punktów zdobył i na którym jest miejscu.
 Po skończeniu gry pokazują się opcję: wróć do pokoju, wyjdź z pokoju.
+
+<hr>
+
+**How to run code:**
+
+* Server:
+    * <code> make</code>
+    * <code> ./game_server [port] </code>
+<br>
+
+
+* Client:
+    * create .env with SERVER_PORT and SERVER_IP
+    * default IP = 127.0.0.1 port = 8080 if .env is not created
+    * <code> pip install -r requirements.txt</code>
+    * <code> python3 main.py </code>
+
+
+
+
+
