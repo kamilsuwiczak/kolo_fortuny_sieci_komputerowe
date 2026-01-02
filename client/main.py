@@ -74,6 +74,7 @@ class App(ctk.CTk):
             code = message.split(":")[1]
             if "RoomView" in self.frames:
                 self.frames["RoomView"].update_room_info(code, self.player_nick)
+                self.frames["RoomView"].update_players([self.player_nick])
             if "GameView" in self.frames:
                 self.frames["GameView"].update_room_info(code, self.player_nick)
         
